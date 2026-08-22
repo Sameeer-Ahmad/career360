@@ -1,0 +1,13 @@
+<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="career360Mark" x1="10" y1="110" x2="110" y2="10" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6" />
+      <stop offset="0.5" stop-color="#6366F1" />
+      <stop offset="1" stop-color="#7C3AED" />
+    </linearGradient>
+  </defs>
+  <path d="M 97.86,67.31 A 38,38 0 1,1 76.06,29.56" stroke="url(#career360Mark)" stroke-width="15" stroke-linecap="round" />
+  <path d="M 66,90 L 89,31" stroke="url(#career360Mark)" stroke-width="11" stroke-linecap="round" />
+  <polygon points="0,-13 8,9 -8,9" fill="url(#career360Mark)" transform="translate(93,25) rotate(24)" />
+  <circle cx="100" cy="14" r="5.5" fill="url(#career360Mark)" />
+</svg>

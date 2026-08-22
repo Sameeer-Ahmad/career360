@@ -1,6 +1,6 @@
-# Job Application Tracker
+# Career360
 
-A full-stack application for tracking and managing job applications.
+Your complete career workspace. Career360 is a full-stack platform for tracking job applications, preparing for interviews, and managing your career — starting with applications and expanding from there.
 
 ## Technology Stack
 
@@ -22,7 +22,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 ## Project Structure
 
 ```
-job-application-tracker/
+career360/
 ├── src/
 │   └── app/
 ├── public/
@@ -35,4 +35,4 @@ job-application-tracker/
 
 ## Status
 
-This project is currently in the initial setup phase. No application features have been implemented yet.
+This project is currently in active development. Not all planned features have been implemented yet.

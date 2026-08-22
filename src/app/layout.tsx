@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Job Application Tracker",
-  description: "Track and manage job applications.",
+  title: "Career360",
+  description: "Career360 — your complete career workspace.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
