@@ -1,8 +1,8 @@
-export default function Home() {
-  return (
-    <main>
-      <h1>Job Application Tracker</h1>
-      <p>Next.js application is up and running.</p>
-    </main>
-  );
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+
+export default async function Home() {
+  const session = await auth();
+
+  redirect(session?.user ? "/dashboard" : "/login");
 }
