@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Briefcase, Calendar, DollarSign, ExternalLink, MapPin, Sparkles } from "lucide-react";
+import { ArrowLeft, Briefcase, Calendar, DollarSign, ExternalLink, FileSearch, MapPin, Sparkles } from "lucide-react";
 import { auth } from "@/auth";
 import { getApplication, NotFoundError } from "@/lib/applications";
 import { Header } from "@/components/shell/header";
@@ -77,6 +77,15 @@ export default async function ApplicationDetailsPage({
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
+              {application.jobDescription?.trim() && (
+                <Link
+                  href={`/job-analysis?applicationId=${application.id}`}
+                  className={buttonVariants("outline", "sm")}
+                >
+                  <FileSearch className="size-4" />
+                  Analyze Job
+                </Link>
+              )}
               <Link
                 href={`/ai-assistant?applicationId=${application.id}`}
                 className={buttonVariants("outline", "sm")}
