@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, type Schema } from "@google/genai";
 
 // Flash tier — fast and cost-effective, appropriate for a single-turn assistant reply.
 const MODEL = "gemini-3.6-flash";
@@ -68,6 +68,47 @@ export async function generateAssistantReply(
   } catch (error) {
     if (error instanceof GeminiConfigError) throw error;
     console.error("[gemini] request failed:", error);
+    throw new GeminiRequestError();
+  }
+
+  if (!text || !text.trim()) {
+    throw new GeminiRequestError("The AI assistant didn't return a response. Please try again.");
+  }
+
+  return text.trim();
+}
+
+const STRUCTURED_MAX_OUTPUT_TOKENS = 2000;
+
+/**
+ * Same service/client as generateAssistantReply, but asks Gemini to return
+ * JSON matching `responseSchema` and returns the raw JSON text (unparsed —
+ * callers own parsing/validation of their own response shape).
+ */
+export async function generateStructuredReply(
+  systemInstruction: string,
+  userPrompt: string,
+  responseSchema: Schema,
+): Promise<string> {
+  const ai = getClient();
+
+  let text: string | undefined;
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: userPrompt,
+      config: {
+        systemInstruction,
+        maxOutputTokens: STRUCTURED_MAX_OUTPUT_TOKENS,
+        temperature: TEMPERATURE,
+        responseMimeType: "application/json",
+        responseSchema,
+      },
+    });
+    text = response.text;
+  } catch (error) {
+    if (error instanceof GeminiConfigError) throw error;
+    console.error("[gemini] structured request failed:", error);
     throw new GeminiRequestError();
   }
 
