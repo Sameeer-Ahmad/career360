@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Briefcase, Calendar, DollarSign, ExternalLink, MapPin } from "lucide-react";
+import { ArrowLeft, Briefcase, Calendar, DollarSign, ExternalLink, MapPin, Sparkles } from "lucide-react";
 import { auth } from "@/auth";
 import { getApplication, NotFoundError } from "@/lib/applications";
 import { Header } from "@/components/shell/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PriorityBadge, StatusBadge } from "@/components/ui/badge";
 import { Divider } from "@/components/ui/divider";
+import { buttonVariants } from "@/components/ui/button";
 import { ApplicationDetailActions } from "@/components/applications/application-detail-actions";
 import { EMPLOYMENT_TYPE_LABELS, formatDate, formatSalaryRange } from "@/lib/format";
 
@@ -76,6 +77,13 @@ export default async function ApplicationDetailsPage({
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <Link
+                href={`/ai-assistant?applicationId=${application.id}`}
+                className={buttonVariants("outline", "sm")}
+              >
+                <Sparkles className="size-4" />
+                Get AI Advice
+              </Link>
               <ApplicationDetailActions applicationId={application.id} label={label} />
             </div>
           </CardHeader>
