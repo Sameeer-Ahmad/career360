@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  website   String?  @db.VarChar(2048)
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+
+  @@index([name])
+}
+
+model Application {
+  id             Int               @id @default(autoincrement())
+  userId         Int
+  companyId      Int
+  jobTitle       String
+  jobUrl         String?           @db.VarChar(2048)
+  location       String?
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String?
+  employmentType EmploymentType?
+  appliedAt      DateTime?
+  status         ApplicationStatus @default(WISHLIST)
+  jobDescription String?           @db.Text
+  priority       Priority?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@index([companyId])
+}
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  ACCEPTED
+  REJECTED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
