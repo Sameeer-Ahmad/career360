@@ -28,22 +28,36 @@ function getClient(): GoogleGenAI {
   return client;
 }
 
+export type ConversationTurn = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 /**
- * Sends a single-turn prompt to Gemini and returns the plain-text reply.
+ * Sends a multi-turn conversation to Gemini and returns the plain-text reply
+ * to the final turn. Turns use this app's "user"/"assistant" role naming —
+ * mapped here to Gemini's "user"/"model" convention, an implementation
+ * detail callers don't need to know about.
+ *
  * Never throws the underlying Gemini/network error to the caller — only
  * GeminiConfigError or GeminiRequestError, both safe to surface to users.
  */
 export async function generateAssistantReply(
   systemInstruction: string,
-  userPrompt: string,
+  turns: ConversationTurn[],
 ): Promise<string> {
   const ai = getClient();
+
+  const contents = turns.map((turn) => ({
+    role: turn.role === "assistant" ? "model" : "user",
+    parts: [{ text: turn.content }],
+  }));
 
   let text: string | undefined;
   try {
     const response = await ai.models.generateContent({
       model: MODEL,
-      contents: userPrompt,
+      contents,
       config: {
         systemInstruction,
         maxOutputTokens: MAX_OUTPUT_TOKENS,

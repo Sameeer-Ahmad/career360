@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getApplication, NotFoundError } from "@/lib/applications";
 import {
-  buildAssistantPrompt,
-  CAREER_ASSISTANT_SYSTEM_INSTRUCTION,
+  buildSystemInstruction,
   toApplicationContext,
-  validateQuestion,
+  validateMessages,
   ValidationError,
 } from "@/lib/career-assistant";
 import { generateAssistantReply, GeminiConfigError, GeminiRequestError } from "@/lib/gemini";
@@ -34,9 +33,9 @@ export async function POST(request: NextRequest) {
   }
   const raw = body as Record<string, unknown>;
 
-  let question: string;
+  let messages;
   try {
-    question = validateQuestion(raw.question);
+    messages = validateMessages(raw.messages);
   } catch (error) {
     if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -62,10 +61,10 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const prompt = buildAssistantPrompt(question, context);
+  const systemInstruction = buildSystemInstruction(context);
 
   try {
-    const reply = await generateAssistantReply(CAREER_ASSISTANT_SYSTEM_INSTRUCTION, prompt);
+    const reply = await generateAssistantReply(systemInstruction, messages);
     return NextResponse.json({ reply });
   } catch (error) {
     if (error instanceof GeminiConfigError) {
