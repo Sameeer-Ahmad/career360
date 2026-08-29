@@ -1,15 +1,57 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Briefcase, Calendar, DollarSign, ExternalLink, FileSearch, MapPin, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  Briefcase,
+  Calendar,
+  Clock,
+  DollarSign,
+  ExternalLink,
+  FileSearch,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
 import { auth } from "@/auth";
-import { getApplication, NotFoundError } from "@/lib/applications";
+import { getApplication, NotFoundError, resolveApplicationId } from "@/lib/applications/applications";
+import { listDocumentsForApplication } from "@/lib/documents/documents";
+import { getLearningPathDetail, listLearningPaths } from "@/lib/learning/learning";
+import { isCalendarConnected } from "@/lib/google-calendar/connection";
+import { findEventsForApplication, findExistingEvent } from "@/lib/google-calendar/events";
 import { Header } from "@/components/shell/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PriorityBadge, StatusBadge } from "@/components/ui/badge";
+import { PriorityBadge } from "@/components/ui/badge";
+import { ApplicationStatusSelect } from "@/components/applications/application-status-select";
 import { Divider } from "@/components/ui/divider";
 import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApplicationDetailActions } from "@/components/applications/application-detail-actions";
-import { EMPLOYMENT_TYPE_LABELS, formatDate, formatSalaryRange } from "@/lib/format";
+import { ApplicationDocumentsTab } from "@/components/applications/application-documents-tab";
+import { ApplicationLearningTab } from "@/components/applications/application-learning-tab";
+import { ApplicationInterviewsTab } from "@/components/applications/application-interviews-tab";
+import type { FollowUpItem } from "@/components/applications/application-follow-ups";
+import { EMPLOYMENT_TYPE_LABELS, formatDate, formatDateTime, formatSalaryRange } from "@/lib/format";
+
+/** The single soonest still-upcoming interview or follow-up for this application — computed from data the page already loaded (no extra Calendar call). Purely a display convenience; the Interviews & Follow-ups tab remains the source of truth. */
+function computeNextUp(
+  interviewAt: Date | null,
+  followUps: FollowUpItem[],
+): { label: string; whenIso: string; whenLabel: string } | null {
+  const now = Date.now();
+  const candidates: { label: string; whenIso: string; whenLabel: string }[] = [];
+
+  if (interviewAt && interviewAt.getTime() > now) {
+    candidates.push({ label: "Interview", whenIso: interviewAt.toISOString(), whenLabel: formatDateTime(interviewAt) });
+  }
+  for (const followUp of followUps) {
+    if (followUp.start && new Date(followUp.start).getTime() > now) {
+      candidates.push({ label: followUp.title, whenIso: followUp.start, whenLabel: formatDateTime(followUp.start) });
+    }
+  }
+
+  candidates.sort((a, b) => a.whenIso.localeCompare(b.whenIso));
+  return candidates[0] ?? null;
+}
 
 export default async function ApplicationDetailsPage({
   params,
@@ -20,16 +62,18 @@ export default async function ApplicationDetailsPage({
   if (!session?.user) {
     redirect("/login");
   }
+  const userId = session.user.id;
 
   const { id: idParam } = await params;
-  const id = Number(idParam);
-  if (!Number.isInteger(id) || id <= 0) {
-    notFound();
-  }
 
   let application;
   try {
-    application = await getApplication(Number(session.user.id), id);
+    // idParam may be a raw ObjectId (old/bookmarked links) or the
+    // professional <company>-<job-title>-<shortId> slug — either way this
+    // resolves to the real id scoped to the requesting user's own
+    // applications, then getApplication re-verifies ownership itself.
+    const id = await resolveApplicationId(userId, idParam);
+    application = await getApplication(userId, id);
   } catch (error) {
     if (error instanceof NotFoundError) {
       notFound();
@@ -38,6 +82,73 @@ export default async function ApplicationDetailsPage({
   }
 
   const label = `${application.jobTitle} at ${application.company.name}`;
+
+  const calendarConnected = await isCalendarConnected(userId);
+  let initialInterviewEvent: { id: string; title: string; start: string | null } | null = null;
+  if (calendarConnected && application.interviewAt) {
+    try {
+      // A transient Calendar lookup failure shouldn't block the whole page
+      // from rendering — GoogleCalendarNotConnectedError (a revoked
+      // connection discovered mid-lookup) and any other failure both just
+      // fall back to "not yet added"; the button lets the user try again.
+      const existing = await findExistingEvent(userId, {
+        eventType: "INTERVIEW",
+        applicationId: application.id,
+      });
+      if (existing) initialInterviewEvent = { id: existing.id, title: existing.title, start: existing.start };
+    } catch {
+      // Fall back to "not yet added" — see comment above.
+    }
+  }
+
+  let initialFollowUps: FollowUpItem[] = [];
+  if (calendarConnected) {
+    try {
+      // Same non-fatal fallback as the interview lookup above — a
+      // transient Calendar failure shows an empty list (with the option
+      // to add one) rather than breaking the page.
+      const events = await findEventsForApplication(userId, application.id, "FOLLOW_UP");
+      initialFollowUps = events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        start: event.start,
+        reminderMinutes: event.reminderMinutes,
+      }));
+    } catch {
+      // Fall back to an empty list — see comment above.
+    }
+  }
+
+  // The form already trims on save, but writes via the API directly (not
+  // through the form) don't — trim here too so a whitespace-only value
+  // can never render as a link.
+  const jobUrl = application.jobUrl?.trim() || null;
+  const hasJobDescription = Boolean(application.jobDescription?.trim());
+
+  // Application Detail is the workspace for this one application — it
+  // already links OUT to Documents/Learning; these two also show what
+  // already links BACK to it, using the existing Application <->
+  // Document/LearningPath relationships (no new model, no new relation).
+  const [applicationDocuments, applicationLearningPaths] = await Promise.all([
+    listDocumentsForApplication(userId, application.id),
+    listLearningPaths(userId, { applicationId: application.id }),
+  ]);
+
+  const resumeDocuments = applicationDocuments.filter((doc) => doc.type === "RESUME");
+  const coverLetterDocuments = applicationDocuments.filter((doc) => doc.type === "COVER_LETTER");
+
+  // Typically 0-1 paths per application (RECOMMENDED paths replace their
+  // predecessor on regeneration) — cheap to fetch the full detail (which
+  // includes the already-computed progressSummary) for each rather than
+  // adding a new aggregate query.
+  const learningPathsWithProgress = await Promise.all(
+    applicationLearningPaths.map((path) => getLearningPathDetail(userId, path.id)),
+  );
+
+  const nextUp = computeNextUp(application.interviewAt, initialFollowUps);
+  const defaultWorkspaceTab =
+    application.interviewAt || initialFollowUps.length > 0 ? "interviews" : "documents";
 
   const facts = [
     { icon: MapPin, label: "Location", value: application.location ?? "Not specified" },
@@ -52,6 +163,9 @@ export default async function ApplicationDetailsPage({
       value: formatSalaryRange(application.salaryMin, application.salaryMax),
     },
     { icon: Calendar, label: "Applied", value: formatDate(application.appliedAt) },
+    ...(application.interviewAt
+      ? [{ icon: Calendar, label: "Interview", value: formatDateTime(application.interviewAt) }]
+      : []),
   ];
 
   return (
@@ -66,26 +180,21 @@ export default async function ApplicationDetailsPage({
           Back to Applications
         </Link>
 
+        {/* Application Header — identity, status, and the two actions that
+            act on the application record itself. Feature-specific actions
+            (Analyze Job, Analyze Resume, Cover Letter, Recommend Learning)
+            now live next to the section they act on, below. */}
         <Card>
           <CardHeader className="flex-col items-start justify-between gap-4 sm:flex-row">
             <div>
               <CardTitle className="text-lg">{application.jobTitle}</CardTitle>
               <p className="text-sm text-muted-foreground">{application.company.name}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <StatusBadge status={application.status} />
+                <ApplicationStatusSelect applicationId={application.id} initialStatus={application.status} label={label} />
                 {application.priority && <PriorityBadge priority={application.priority} />}
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              {application.jobDescription?.trim() && (
-                <Link
-                  href={`/job-analysis?applicationId=${application.id}`}
-                  className={buttonVariants("outline", "sm")}
-                >
-                  <FileSearch className="size-4" />
-                  Analyze Job
-                </Link>
-              )}
               <Link
                 href={`/ai-assistant?applicationId=${application.id}`}
                 className={buttonVariants("outline", "sm")}
@@ -97,21 +206,29 @@ export default async function ApplicationDetailsPage({
             </div>
           </CardHeader>
           <Divider />
-          <CardContent className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* grid-cols-2 from the base (not sm:) — on mobile this metadata
+              was previously one long single-column stack (Location,
+              Employment type, Salary, Applied each on their own full-width
+              row), taking up a lot of vertical space before the user even
+              reaches the rest of the page. Two columns at every width below
+              lg halves that. Values wrap (no truncate) so a long salary
+              range or location never gets clipped at the narrower
+              half-width column. */}
+          <CardContent className="grid grid-cols-2 gap-x-4 gap-y-4 pt-5 lg:grid-cols-4">
             {facts.map((fact) => (
               <div key={fact.label} className="flex items-start gap-2.5">
                 <fact.icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">{fact.label}</p>
-                  <p className="truncate text-sm font-medium text-foreground">{fact.value}</p>
+                  <p className="break-words text-sm font-medium text-foreground">{fact.value}</p>
                 </div>
               </div>
             ))}
           </CardContent>
-          {application.jobUrl && (
+          {jobUrl && (
             <CardContent className="pt-0">
               <a
-                href={application.jobUrl}
+                href={jobUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
@@ -123,16 +240,92 @@ export default async function ApplicationDetailsPage({
           )}
         </Card>
 
-        {application.jobDescription && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Job description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap text-sm text-foreground">{application.jobDescription}</p>
-            </CardContent>
-          </Card>
+        {/* Next up — a one-line glance at the soonest upcoming interview or
+            follow-up, so "what do I need to do next" doesn't require
+            opening the Interviews & Follow-ups tab first. */}
+        {nextUp && (
+          <div className="flex items-center gap-2.5 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+            <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            <p className="text-sm text-foreground">
+              <span className="font-medium">Next up:</span> {nextUp.label} · {nextUp.whenLabel}
+            </p>
+          </div>
         )}
+
+        {/* Job — the core reference content for this application, always visible. */}
+        <Card>
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+            <CardTitle>Job</CardTitle>
+            {hasJobDescription && (
+              <Link href={`/job-analysis?applicationId=${application.id}`} className={buttonVariants("outline", "sm")}>
+                <FileSearch className="size-4" />
+                Analyze Job
+              </Link>
+            )}
+          </CardHeader>
+          <Divider />
+          <CardContent className="pt-5">
+            {hasJobDescription ? (
+              <p className="whitespace-pre-wrap text-sm text-foreground">{application.jobDescription}</p>
+            ) : (
+              <EmptyState
+                icon={FileSearch}
+                title="No job description added"
+                description="Add the job description to unlock Job Analysis, Resume Analysis, and better AI suggestions for this application."
+                action={
+                  <Link href={`/applications/${application.id}/edit`} className={buttonVariants("outline", "sm")}>
+                    Edit Application
+                  </Link>
+                }
+                className="py-10"
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Workspace — Documents, Learning Path, and Interviews & Follow-ups
+            grouped under one tabbed area instead of three separate stacked
+            cards, so the page reads as a workspace for this application
+            rather than a pile of unrelated cards. */}
+        <Card>
+          <CardContent className="pt-5">
+            <Tabs defaultValue={defaultWorkspaceTab}>
+              <TabsList className="flex-wrap">
+                <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="learning">Learning Path</TabsTrigger>
+                <TabsTrigger value="interviews">Interviews</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="documents" className="space-y-6">
+                <ApplicationDocumentsTab
+                  applicationId={application.id}
+                  hasJobDescription={hasJobDescription}
+                  resumeDocuments={resumeDocuments}
+                  coverLetterDocuments={coverLetterDocuments}
+                />
+              </TabsContent>
+
+              <TabsContent value="learning" className="space-y-3">
+                <ApplicationLearningTab
+                  applicationId={application.id}
+                  learningPathsWithProgress={learningPathsWithProgress}
+                />
+              </TabsContent>
+
+              <TabsContent value="interviews" className="space-y-5">
+                <ApplicationInterviewsTab
+                  applicationId={application.id}
+                  jobTitle={application.jobTitle}
+                  companyName={application.company.name}
+                  calendarConnected={calendarConnected}
+                  interviewAt={application.interviewAt}
+                  initialInterviewEvent={initialInterviewEvent}
+                  initialFollowUps={initialFollowUps}
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
         <p className="text-xs text-muted-foreground">
           Added {formatDate(application.createdAt)} · Last updated {formatDate(application.updatedAt)}
