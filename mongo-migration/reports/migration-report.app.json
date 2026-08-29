@@ -1,0 +1,60 @@
+{
+  "startedAt": "2026-08-23T19:25:56.089Z",
+  "finishedAt": "2026-08-23T19:25:56.738Z",
+  "snapshot": {
+    "User": 1,
+    "Account": 2,
+    "Session": 1,
+    "Company": 13,
+    "Application": 13,
+    "Document": 9
+  },
+  "steps": {
+    "users": {
+      "mysqlCount": 1,
+      "created": 1,
+      "resumedFromMap": 0
+    },
+    "companies": {
+      "mysqlCount": 13,
+      "created": 13,
+      "resumedFromMap": 0
+    },
+    "accounts": {
+      "mysqlCount": 2,
+      "created": 2,
+      "resumedFromMap": 0
+    },
+    "sessions": {
+      "mysqlCount": 1,
+      "created": 1,
+      "resumedFromMap": 0
+    },
+    "applications": {
+      "mysqlCount": 13,
+      "created": 13,
+      "resumedFromMap": 0
+    },
+    "documentsPass1": {
+      "mysqlCount": 9,
+      "created": 9,
+      "resumedFromMap": 0
+    },
+    "documentsPass2": {
+      "documentsWithSourceOrMaster": 7,
+      "resolved": 7,
+      "alreadyResolved": 0
+    }
+  },
+  "warnings": [],
+  "errors": [],
+  "failedLoudly": false,
+  "mongoCounts": {
+    "User": 1,
+    "Account": 2,
+    "Session": 1,
+    "Company": 13,
+    "Application": 13,
+    "Document": 9
+  }
+}
