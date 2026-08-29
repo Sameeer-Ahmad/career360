@@ -1,0 +1,189 @@
+// CANDIDATE MongoDB schema — migration infrastructure only.
+//
+// This is NOT the application's schema. The real, active schema is
+// prisma/schema.prisma (provider = "mysql"), which this file does not
+// touch or replace. This schema targets the scratch database named in
+// MONGODB_MIGRATION_SCRATCH_URL (career360_migration_scratch), never the
+// application's real MongoDB database or MySQL database.
+//
+// Generated client output is isolated under mongo-migration/generated/client
+// (see the generator block below) so `prisma generate` for this schema can
+// never overwrite node_modules/@prisma/client, which the running
+// application still uses against MySQL.
+//
+// Field-for-field port of prisma/schema.prisma per the approved migration
+// design: same models, same enums, same nullability, same timestamps, same
+// indexes/unique constraints, same relations (including both Document
+// self-relations). The only real changes are the datasource provider and
+// every id / relation-scalar field moving from Int (autoincrement) to
+// String @db.ObjectId.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_MIGRATION_SCRATCH_URL")
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  applications Application[]
+  documents    Document[]
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Company {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  website   String?
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+
+  @@index([name])
+}
+
+model Application {
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String            @db.ObjectId
+  companyId      String            @db.ObjectId
+  jobTitle       String
+  jobUrl         String?
+  location       String?
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String?
+  employmentType EmploymentType?
+  appliedAt      DateTime?
+  status         ApplicationStatus @default(WISHLIST)
+  jobDescription String?
+  priority       Priority?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company       Company    @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  taggedResumes Document[] @relation("DocumentApplication")
+
+  @@index([userId, status])
+  @@index([companyId])
+}
+
+model Document {
+  id               String                @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String                @db.ObjectId
+  type             DocumentType          @default(RESUME)
+  contentFormat    DocumentContentFormat @default(PLAIN)
+  resumeRole       ResumeRole?
+  title            String
+  content          String
+  sourceDocumentId String?               @db.ObjectId
+  masterDocumentId String?               @db.ObjectId
+  applicationId    String?               @db.ObjectId
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Prisma's MongoDB connector REQUIRES both onDelete and onUpdate to be
+  // NoAction on a self-relation (schema-validation-time error otherwise —
+  // confirmed empirically against 6.19.3, see mongo-migration/reports).
+  // This means the Cascade (source -> tailored versions) and SetNull
+  // (tailored version -> master) behavior the MySQL schema declares
+  // cannot be Prisma-emulated for these two relations at all, on Mongo —
+  // it MUST be implemented at the application level. See Phase 3
+  // referential-action test results.
+  sourceDocument        Document?    @relation("DocumentVersions", fields: [sourceDocumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  versions              Document[]   @relation("DocumentVersions")
+  masterDocument        Document?    @relation("DocumentMasterReference", fields: [masterDocumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tailoredUsingAsMaster Document[]   @relation("DocumentMasterReference")
+  application           Application? @relation("DocumentApplication", fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([sourceDocumentId])
+  @@index([masterDocumentId])
+  @@index([applicationId])
+}
+
+enum DocumentType {
+  RESUME
+  COVER_LETTER
+  OTHER
+}
+
+enum DocumentContentFormat {
+  PLAIN
+  LATEX
+}
+
+enum ResumeRole {
+  MAIN
+  MASTER
+}
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  ACCEPTED
+  REJECTED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}

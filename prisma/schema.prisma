@@ -1,13 +1,23 @@
+// MongoDB schema — active application schema as of the MySQL -> MongoDB
+// cutover. Field-for-field identical to the validated candidate schema at
+// mongo-migration/prisma/schema.prisma (dry-run migration + 11/11
+// validation passed against both the scratch and real career360
+// databases before this file was adopted). MySQL is retained temporarily
+// as a rollback/reference database — see mongo-migration/prisma-mysql-snapshot/
+// for its frozen schema and mongo-migration/scripts/ for the migration
+// tooling, both left fully intact.
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mongodb"
+  url      = env("MONGODB_DATABASE_URL")
 }
 
 model User {
-  id            Int       @id @default(autoincrement())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   email         String    @unique
   emailVerified DateTime?
@@ -21,17 +31,17 @@ model User {
 }
 
 model Account {
-  id                Int     @id @default(autoincrement())
-  userId            Int
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -41,9 +51,9 @@ model Account {
 }
 
 model Session {
-  id           Int      @id @default(autoincrement())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   sessionToken String   @unique
-  userId       Int
+  userId       String   @db.ObjectId
   expires      DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -52,9 +62,9 @@ model Session {
 }
 
 model Company {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  website   String?  @db.VarChar(2048)
+  website   String?
   location  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -65,11 +75,11 @@ model Company {
 }
 
 model Application {
-  id             Int               @id @default(autoincrement())
-  userId         Int
-  companyId      Int
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String            @db.ObjectId
+  companyId      String            @db.ObjectId
   jobTitle       String
-  jobUrl         String?           @db.VarChar(2048)
+  jobUrl         String?
   location       String?
   salaryMin      Int?
   salaryMax      Int?
@@ -77,7 +87,7 @@ model Application {
   employmentType EmploymentType?
   appliedAt      DateTime?
   status         ApplicationStatus @default(WISHLIST)
-  jobDescription String?           @db.Text
+  jobDescription String?
   priority       Priority?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
