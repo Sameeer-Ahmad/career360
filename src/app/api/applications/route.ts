@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { createApplication, listApplications, ValidationError } from "@/lib/applications";
+import { requireUserId } from "@/lib/api-auth";
+import { createApplication, listApplications, ValidationError } from "@/lib/applications/applications";
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+/**
+ * `?q=` reuses the exact same job-title/company-name search
+ * ApplicationsFilterBar already drives via listApplications — no new query
+ * logic. Omitting it (existing callers, e.g. the Learning workspace's
+ * application picker) keeps today's "return everything" behavior exactly.
+ */
+export async function GET(request: NextRequest) {
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
-  const applications = await listApplications(Number(session.user.id));
+  const q = request.nextUrl.searchParams.get("q")?.trim() || undefined;
+  const applications = await listApplications(userId, q ? { q } : {});
   return NextResponse.json(applications);
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   let body: unknown;
   try {
@@ -26,7 +29,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const application = await createApplication(Number(session.user.id), body);
+    const application = await createApplication(userId, body);
     return NextResponse.json(application, { status: 201 });
   } catch (error) {
     if (error instanceof ValidationError) {

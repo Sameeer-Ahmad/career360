@@ -2,10 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Briefcase, SearchX } from "lucide-react";
 import { auth } from "@/auth";
-import { hasApplications, listApplications, parseApplicationListQuery } from "@/lib/applications";
+import { hasApplications, listApplications, parseApplicationListQuery } from "@/lib/applications/applications";
 import { Header } from "@/components/shell/header";
 import { buttonVariants } from "@/components/ui/button";
-import { PriorityBadge, StatusBadge } from "@/components/ui/badge";
+import { PriorityBadge } from "@/components/ui/badge";
+import { ApplicationStatusSelect } from "@/components/applications/application-status-select";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
@@ -20,6 +21,7 @@ import { ApplicationRowActions } from "@/components/applications/application-row
 import { ApplicationCard } from "@/components/applications/application-card";
 import { ApplicationsFilterBar } from "@/components/applications/applications-filter-bar";
 import { formatDate } from "@/lib/format";
+import { buildApplicationSlug } from "@/lib/applications/application-slug";
 
 export default async function ApplicationsPage({
   searchParams,
@@ -31,7 +33,7 @@ export default async function ApplicationsPage({
     redirect("/login");
   }
 
-  const userId = Number(session.user.id);
+  const userId = session.user.id;
   const resolvedSearchParams = await searchParams;
   const filters = parseApplicationListQuery(resolvedSearchParams);
   const filtersActive = Boolean(
@@ -105,9 +107,17 @@ export default async function ApplicationsPage({
                     <TableBody>
                       {applications.map((app) => {
                         const label = `${app.jobTitle} at ${app.company.name}`;
+                        const href = `/applications/${buildApplicationSlug(app)}`;
                         return (
                           <TableRow key={app.id}>
-                            <TableCell className="font-medium">{app.company.name}</TableCell>
+                            <TableCell className="font-medium">
+                              <Link
+                                href={href}
+                                className="rounded-sm text-foreground underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                              >
+                                {app.company.name}
+                              </Link>
+                            </TableCell>
                             <TableCell>{app.jobTitle}</TableCell>
                             <TableCell className="text-muted-foreground">
                               {app.location ?? "—"}
@@ -119,10 +129,10 @@ export default async function ApplicationsPage({
                               {app.priority ? <PriorityBadge priority={app.priority} /> : "—"}
                             </TableCell>
                             <TableCell>
-                              <StatusBadge status={app.status} />
+                              <ApplicationStatusSelect applicationId={app.id} initialStatus={app.status} label={label} />
                             </TableCell>
                             <TableCell className="text-right">
-                              <ApplicationRowActions applicationId={app.id} label={label} />
+                              <ApplicationRowActions applicationId={app.id} href={href} label={label} />
                             </TableCell>
                           </TableRow>
                         );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 
 export function DeleteApplicationDialog({
   applicationId,
@@ -11,7 +12,7 @@ export function DeleteApplicationDialog({
   trigger,
   onDeleted,
 }: {
-  applicationId: number;
+  applicationId: string;
   /** e.g. "Senior Frontend Engineer at Acme Corp" — shown in the confirmation copy. */
   label: string;
   trigger: React.ReactNode;
@@ -20,6 +21,7 @@ export function DeleteApplicationDialog({
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   async function handleDelete() {
     if (deleting) return;
@@ -29,15 +31,19 @@ export function DeleteApplicationDialog({
       const response = await fetch(`/api/applications/${applicationId}`, { method: "DELETE" });
       if (!response.ok && response.status !== 404) {
         const body = await response.json().catch(() => null);
-        setError(body?.error ?? "Could not delete this application. Please try again.");
+        const message = body?.error ?? "Could not delete this application. Please try again.";
+        setError(message);
+        toast.error(message);
         setDeleting(false);
         return;
       }
       setOpen(false);
       setDeleting(false);
+      toast.success("Application deleted");
       onDeleted();
     } catch {
       setError("Network error — please check your connection and try again.");
+      toast.error("Network error — please check your connection and try again.");
       setDeleting(false);
     }
   }

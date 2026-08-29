@@ -5,6 +5,8 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { APPLICATION_SORTS, type ApplicationSort } from "@/lib/applications/application-sort";
+import { extractShortId } from "@/lib/applications/application-slug";
+import { isValidObjectId } from "@/lib/object-id";
 
 export { APPLICATION_SORTS, type ApplicationSort };
 
@@ -312,6 +314,45 @@ export async function getApplication(userId: string, id: string) {
   });
   if (!application) throw new NotFoundError();
   return application;
+}
+
+/**
+ * Resolves a route param that may be either a raw ObjectId (old/bookmarked
+ * links, or any other internal caller that already has the real id) or a
+ * professional slug (<company>-<job-title>-<shortId>, see
+ * application-slug.ts) into the application's actual id. The scan is
+ * scoped to the requesting user's own applications, so a short id can
+ * never resolve to — or leak the existence of — another user's
+ * application. Throws NotFoundError uniformly, exactly like every other
+ * lookup in this module (never distinguishes "no such id" from "not
+ * yours" or "not a valid slug").
+ */
+export async function resolveApplicationId(userId: string, idOrSlug: string): Promise<string> {
+  if (isValidObjectId(idOrSlug)) return idOrSlug;
+
+  const shortId = extractShortId(idOrSlug);
+  if (!shortId) throw new NotFoundError();
+
+  const candidates = await prisma.application.findMany({ where: { userId }, select: { id: true } });
+  const match = candidates.find((c) => c.id.toLowerCase().endsWith(shortId));
+  if (!match) throw new NotFoundError();
+  return match.id;
+}
+
+/**
+ * Verifies the given application belongs to the user, without fetching the
+ * full row — throws NotFoundError for both "doesn't exist" and "belongs to
+ * someone else" (never distinguishes the two, so existence is never
+ * leaked). Shared by any feature that needs to attach an applicationId to
+ * something it owns without necessarily needing the application's data
+ * (e.g. tagging a Document, or scoping a LearningPath).
+ */
+export async function assertApplicationOwnership(userId: string, applicationId: string): Promise<void> {
+  const application = await prisma.application.findFirst({
+    where: { id: applicationId, userId },
+    select: { id: true },
+  });
+  if (!application) throw new NotFoundError();
 }
 
 export async function updateApplication(userId: string, id: string, body: unknown) {

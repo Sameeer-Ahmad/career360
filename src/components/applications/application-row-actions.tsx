@@ -8,16 +8,20 @@ import { DeleteApplicationDialog } from "@/components/applications/delete-applic
 
 export function ApplicationRowActions({
   applicationId,
+  href,
   label,
 }: {
-  applicationId: number;
+  applicationId: string;
+  /** Application detail destination — the professional slug URL, same destination the company-name link uses. Defaults to the raw id route if omitted. */
+  href?: string;
   label: string;
 }) {
   const router = useRouter();
+  const detailHref = href ?? `/applications/${applicationId}`;
 
   return (
     <div className="flex items-center justify-end gap-1">
-      <Link href={`/applications/${applicationId}`} aria-label={`View ${label}`} className={iconButtonVariants("ghost", "sm")}>
+      <Link href={detailHref} aria-label={`View ${label}`} className={iconButtonVariants("ghost", "sm")}>
         <Eye />
       </Link>
       <Link
