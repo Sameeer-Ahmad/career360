@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorState } from "@/components/ui/error-state";
 import { cn } from "@/lib/cn";
-import { MAX_QUESTION_LENGTH, type ChatMessage } from "@/lib/career-assistant";
+import { MAX_QUESTION_LENGTH, type ChatMessage } from "@/lib/ai-assistant/career-assistant";
 
 const SUGGESTED_PROMPTS = [
   "How should I prepare for this application?",
@@ -43,7 +43,7 @@ const markdownComponents: Components = {
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 export type AssistantApplicationContext = {
-  id: number;
+  id: string;
   jobTitle: string;
   companyName: string;
 };

@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, Briefcase, FileSearch, ListChecks, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge, PriorityBadge } from "@/components/ui/badge";
-import { LoadingState } from "@/components/ui/loading-state";
+import { CyclingLoadingState } from "@/components/ui/cycling-loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Collapsible } from "@/components/ui/collapsible";
 import { Divider } from "@/components/ui/divider";
-import { MAX_JOB_DESCRIPTION_LENGTH, type JobAnalysis } from "@/lib/job-analysis";
+import { MAX_JOB_DESCRIPTION_LENGTH, type JobAnalysis } from "@/lib/job-analysis/job-analysis";
 
 export type JobAnalysisApplicationContext = {
-  id: number;
+  id: string;
   jobTitle: string;
   companyName: string;
   jobDescription: string;
@@ -26,23 +26,6 @@ const LOADING_MESSAGES = [
   "Identifying interview focus areas…",
   "Building your preparation plan…",
 ];
-
-/**
- * Mounted only while a request is in flight (see usage below), so its index
- * naturally starts fresh at 0 every time — no effect-based reset needed.
- */
-function CyclingLoadingState() {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((i) => Math.min(i + 1, LOADING_MESSAGES.length - 1));
-    }, 2200);
-    return () => clearInterval(interval);
-  }, []);
-
-  return <LoadingState label={LOADING_MESSAGES[index]} />;
-}
 
 function SkillGroup({ label, items }: { label: string; items: string[] }) {
   if (items.length === 0) return null;
@@ -343,7 +326,7 @@ export function JobAnalysisPanel({
         </form>
       )}
 
-      {loading && <CyclingLoadingState />}
+      {loading && <CyclingLoadingState messages={LOADING_MESSAGES} />}
 
       {!loading && error && <ErrorState description={error} onRetry={analyze} />}
 

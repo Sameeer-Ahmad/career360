@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getApplication, NotFoundError } from "@/lib/applications";
+import { getApplication, NotFoundError } from "@/lib/applications/applications";
+import { isValidObjectId } from "@/lib/object-id";
 import { Header } from "@/components/shell/header";
-import { JobAnalysisPanel, type JobAnalysisApplicationContext } from "@/components/ai/job-analysis-panel";
+import { JobAnalysisPanel, type JobAnalysisApplicationContext } from "@/components/job-analysis/job-analysis-panel";
 
 export default async function JobAnalysisPage({
   searchParams,
@@ -17,15 +18,15 @@ export default async function JobAnalysisPage({
   const resolvedSearchParams = await searchParams;
   const rawApplicationId = resolvedSearchParams.applicationId;
   const applicationIdParam = Array.isArray(rawApplicationId) ? rawApplicationId[0] : rawApplicationId;
-  const applicationId = applicationIdParam ? Number(applicationIdParam) : NaN;
+  const applicationId = applicationIdParam && isValidObjectId(applicationIdParam) ? applicationIdParam : null;
 
   let applicationContext: JobAnalysisApplicationContext | undefined;
-  if (Number.isInteger(applicationId) && applicationId > 0) {
+  if (applicationId !== null) {
     try {
       // Re-verifies ownership here too (in addition to the API route) so we only
       // ever show application context — including its job description — for
       // applications this user actually owns.
-      const application = await getApplication(Number(session.user.id), applicationId);
+      const application = await getApplication(session.user.id, applicationId);
       if (application.jobDescription?.trim()) {
         applicationContext = {
           id: application.id,

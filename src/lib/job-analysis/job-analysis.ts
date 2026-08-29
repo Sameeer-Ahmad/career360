@@ -1,7 +1,6 @@
 import { Type, type Schema } from "@google/genai";
 import type { ApplicationStatus, EmploymentType } from "@prisma/client";
-import { EMPLOYMENT_TYPE_LABELS } from "@/lib/format";
-import { STATUS_LABELS } from "@/components/ui/badge";
+import { EMPLOYMENT_TYPE_LABELS, STATUS_LABELS } from "@/lib/format";
 
 export const MAX_JOB_DESCRIPTION_LENGTH = 8000;
 

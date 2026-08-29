@@ -1,6 +1,5 @@
-import type { ApplicationStatus, EmploymentType, Priority } from "@prisma/client";
-import { EMPLOYMENT_TYPE_LABELS, formatSalaryRange } from "@/lib/format";
-import { STATUS_LABELS, PRIORITY_LABELS } from "@/components/ui/badge";
+import { EMPLOYMENT_TYPE_LABELS, formatSalaryRange, PRIORITY_LABELS, STATUS_LABELS } from "@/lib/format";
+import type { ApplicationContext } from "@/lib/application-ai-context";
 
 export const MAX_QUESTION_LENGTH = 1000;
 export const MAX_MESSAGES = 30;
@@ -55,43 +54,6 @@ export function validateMessages(input: unknown): ChatMessage[] {
   }
 
   return messages;
-}
-
-export type ApplicationContext = {
-  jobTitle: string;
-  companyName: string;
-  location: string | null;
-  employmentType: EmploymentType | null;
-  status: ApplicationStatus;
-  priority: Priority | null;
-  salaryMin: number | null;
-  salaryMax: number | null;
-  jobDescription: string | null;
-};
-
-/** Picks only the fields relevant to career guidance — never IDs, timestamps, or foreign keys. */
-export function toApplicationContext(application: {
-  jobTitle: string;
-  company: { name: string };
-  location: string | null;
-  employmentType: EmploymentType | null;
-  status: ApplicationStatus;
-  priority: Priority | null;
-  salaryMin: number | null;
-  salaryMax: number | null;
-  jobDescription: string | null;
-}): ApplicationContext {
-  return {
-    jobTitle: application.jobTitle,
-    companyName: application.company.name,
-    location: application.location,
-    employmentType: application.employmentType,
-    status: application.status,
-    priority: application.priority,
-    salaryMin: application.salaryMin,
-    salaryMax: application.salaryMax,
-    jobDescription: application.jobDescription,
-  };
 }
 
 export const CAREER_ASSISTANT_SYSTEM_INSTRUCTION = `You are the Career360 AI Assistant, part of the Career360 career workspace product.

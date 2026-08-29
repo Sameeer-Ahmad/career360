@@ -7,9 +7,8 @@ import type { ApplicationStatus, EmploymentType, Priority } from "@prisma/client
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { STATUS_LABELS, PRIORITY_LABELS } from "@/components/ui/badge";
-import { EMPLOYMENT_TYPE_LABELS } from "@/lib/format";
-import { APPLICATION_SORTS, type ApplicationSort } from "@/lib/application-sort";
+import { EMPLOYMENT_TYPE_LABELS, PRIORITY_LABELS, STATUS_LABELS } from "@/lib/format";
+import { APPLICATION_SORTS, type ApplicationSort } from "@/lib/applications/application-sort";
 
 const STATUSES = Object.keys(STATUS_LABELS) as ApplicationStatus[];
 const PRIORITIES = Object.keys(PRIORITY_LABELS) as Priority[];
