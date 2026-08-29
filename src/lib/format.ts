@@ -48,6 +48,12 @@ export function formatDate(value: Date | string | null | undefined): string {
   return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
+export function formatDateTime(value: Date | string | null | undefined): string {
+  if (!value) return "—";
+  const date = typeof value === "string" ? new Date(value) : value;
+  return date.toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 /** Salaries are tracked in rupees only — no per-application currency choice. */
 export function formatSalaryRange(min: number | null | undefined, max: number | null | undefined): string {
   if (min == null && max == null) return "—";
