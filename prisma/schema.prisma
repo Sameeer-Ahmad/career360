@@ -22,6 +22,11 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   avatarUrl     String?
+  /// scrypt-hashed password (see src/lib/password.ts), format
+  /// "<saltHex>:<derivedKeyHex>" — null for Google-only accounts that have
+  /// never set one. Never selected/returned outside auth.ts's Credentials
+  /// authorize() and the signup flow.
+  password      String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
