@@ -25,11 +25,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  applications  Application[]
-  documents     Document[]
-  learningPaths LearningPath[]
+  accounts                 Account[]
+  sessions                 Session[]
+  applications             Application[]
+  documents                Document[]
+  learningPaths            LearningPath[]
+  googleCalendarConnection GoogleCalendarConnection?
 }
 
 model Account {
@@ -63,6 +64,31 @@ model Session {
   @@index([userId])
 }
 
+// Deliberately separate from Account (which NextAuth's PrismaAdapter owns
+// and manages for login) — reusing that model for a second, independently
+// refreshed token set (Calendar, requested via its own explicit consent
+// flow, narrower scope) would risk NextAuth's own login/session bookkeeping
+// clobbering or being clobbered by Calendar-specific token refreshes. One
+// row per user; connecting again (e.g. after a revoke) upserts in place.
+model GoogleCalendarConnection {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String   @unique @db.ObjectId
+  accessToken          String
+  refreshToken         String
+  accessTokenExpiresAt DateTime
+  scope                String
+  /// The connected Google account's email — display-only, fetched once at
+  /// connect time via Google's userinfo endpoint. Deliberately independent
+  /// of the Career360 login account (see auth.ts), which may use a
+  /// different email entirely. Null if the userinfo lookup ever failed
+  /// (non-fatal — the connection itself still works without it).
+  googleEmail          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Company {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
@@ -91,6 +117,10 @@ model Application {
   status         ApplicationStatus @default(WISHLIST)
   jobDescription String?
   priority       Priority?
+  // The scheduled interview date/time, if any — set manually by the user
+  // (there is no AI-driven interview detection). Powers the "Add to Google
+  // Calendar" interview integration; null means no interview is scheduled.
+  interviewAt    DateTime?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
