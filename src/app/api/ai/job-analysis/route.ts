@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { getApplication, NotFoundError } from "@/lib/applications";
-import { toApplicationContext } from "@/lib/career-assistant";
+import { requireUserId } from "@/lib/api-auth";
+import { getApplication, NotFoundError } from "@/lib/applications/applications";
+import { toApplicationContext } from "@/lib/application-ai-context";
 import {
   buildJobAnalysisPrompt,
   JOB_ANALYSIS_RESPONSE_SCHEMA,
@@ -10,20 +10,18 @@ import {
   parseJobAnalysis,
   validateJobDescription,
   ValidationError,
-} from "@/lib/job-analysis";
+} from "@/lib/job-analysis/job-analysis";
 import { generateStructuredReply, GeminiConfigError, GeminiRequestError } from "@/lib/gemini";
+import { isValidObjectId } from "@/lib/object-id";
 
-function parseApplicationId(value: unknown): number | null {
+function parseApplicationId(value: unknown): string | null {
   if (value === undefined || value === null) return null;
-  const id = Number(value);
-  return Number.isInteger(id) && id > 0 ? id : null;
+  return isValidObjectId(value) ? value : null;
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   let body: unknown;
   try {
@@ -51,7 +49,7 @@ export async function POST(request: NextRequest) {
     // doesn't actually match the application being referenced.
     let application;
     try {
-      application = await getApplication(Number(session.user.id), applicationId);
+      application = await getApplication(userId, applicationId);
     } catch (error) {
       if (error instanceof NotFoundError) {
         return NextResponse.json({ error: "Application not found" }, { status: 404 });
