@@ -9,8 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { STATUS_LABELS, PRIORITY_LABELS } from "@/components/ui/badge";
-import { EMPLOYMENT_TYPE_LABELS, toDateInputValue } from "@/lib/format";
+import { EMPLOYMENT_TYPE_LABELS, PRIORITY_LABELS, STATUS_LABELS, toDateInputValue } from "@/lib/format";
 import { AlertCircle } from "lucide-react";
 
 const STATUSES = Object.keys(STATUS_LABELS) as ApplicationStatus[];
@@ -107,7 +106,7 @@ export function ApplicationForm({
   initialValues,
 }: {
   mode: "create" | "edit";
-  applicationId?: number;
+  applicationId?: string;
   initialValues?: ApplicationFormInitialValues;
 }) {
   const router = useRouter();

@@ -4,7 +4,7 @@ import {
   Priority,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { APPLICATION_SORTS, type ApplicationSort } from "@/lib/application-sort";
+import { APPLICATION_SORTS, type ApplicationSort } from "@/lib/applications/application-sort";
 
 export { APPLICATION_SORTS, type ApplicationSort };
 
@@ -173,7 +173,12 @@ async function resolveCompany(input: {
   companyLocation?: string | null;
 }) {
   const name = input.companyName.trim();
-  const existing = await prisma.company.findFirst({ where: { name } });
+  // mode: "insensitive" is required on MongoDB — unlike MySQL, where this
+  // case-insensitive reuse behavior fell out of the database's default
+  // collation for free, Mongo's string equality is case-sensitive by
+  // default and would otherwise silently start creating a new Company for
+  // "Acme" vs "acme".
+  const existing = await prisma.company.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
   if (existing) return existing;
 
   return prisma.company.create({
@@ -185,7 +190,7 @@ async function resolveCompany(input: {
   });
 }
 
-export async function createApplication(userId: number, body: unknown) {
+export async function createApplication(userId: string, body: unknown) {
   const input = parseApplicationInput(body, { partial: false }) as ApplicationInput;
   const company = await resolveCompany(input);
 
@@ -267,23 +272,24 @@ function resolveOrderBy(sort?: ApplicationSort) {
     case "appliedDesc":
       return { appliedAt: "desc" as const };
     default:
-      // Preserves the original (Phase 4/6) default for callers that don't request a sort at all.
       return { createdAt: "desc" as const };
   }
 }
 
-export async function listApplications(userId: number, filters: ApplicationListFilters = {}) {
+export async function listApplications(userId: string, filters: ApplicationListFilters = {}) {
   return prisma.application.findMany({
     where: {
       userId,
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.priority ? { priority: filters.priority } : {}),
       ...(filters.employmentType ? { employmentType: filters.employmentType } : {}),
+      // mode: "insensitive" preserves the same case-insensitive search
+      // behavior MySQL's default collation gave this for free.
       ...(filters.q
         ? {
             OR: [
-              { jobTitle: { contains: filters.q } },
-              { company: { name: { contains: filters.q } } },
+              { jobTitle: { contains: filters.q, mode: "insensitive" } },
+              { company: { name: { contains: filters.q, mode: "insensitive" } } },
             ],
           }
         : {}),
@@ -294,12 +300,12 @@ export async function listApplications(userId: number, filters: ApplicationListF
 }
 
 /** Cheap existence check — distinguishes "no applications at all" from "no results for the current filters". */
-export async function hasApplications(userId: number): Promise<boolean> {
+export async function hasApplications(userId: string): Promise<boolean> {
   const existing = await prisma.application.findFirst({ where: { userId }, select: { id: true } });
   return existing !== null;
 }
 
-export async function getApplication(userId: number, id: number) {
+export async function getApplication(userId: string, id: string) {
   const application = await prisma.application.findFirst({
     where: { id, userId },
     include: { company: true },
@@ -308,13 +314,13 @@ export async function getApplication(userId: number, id: number) {
   return application;
 }
 
-export async function updateApplication(userId: number, id: number, body: unknown) {
+export async function updateApplication(userId: string, id: string, body: unknown) {
   const existing = await prisma.application.findFirst({ where: { id, userId } });
   if (!existing) throw new NotFoundError();
 
   const input = parseApplicationInput(body, { partial: true });
 
-  let companyId: number | undefined;
+  let companyId: string | undefined;
   if (input.companyName !== undefined) {
     const company = await resolveCompany({
       companyName: input.companyName,
@@ -344,8 +350,9 @@ export async function updateApplication(userId: number, id: number, body: unknow
   });
 }
 
-export async function deleteApplication(userId: number, id: number) {
+export async function deleteApplication(userId: string, id: string) {
   const existing = await prisma.application.findFirst({ where: { id, userId } });
   if (!existing) throw new NotFoundError();
+
   await prisma.application.delete({ where: { id } });
 }

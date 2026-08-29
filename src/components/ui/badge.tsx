@@ -1,8 +1,7 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 import type { ApplicationStatus, Priority } from "@prisma/client";
-
-export type BadgeVariant = "neutral" | "primary" | "success" | "warning" | "destructive" | "info";
+import { PRIORITY_LABELS, STATUS_LABELS, type BadgeVariant } from "@/lib/format";
 
 const variantClasses: Record<BadgeVariant, string> = {
   neutral: "bg-muted text-muted-foreground",
@@ -21,7 +20,7 @@ export function Badge({ className, variant = "neutral", ...props }: BadgeProps) 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
         variantClasses[variant],
         className,
       )}
@@ -30,17 +29,7 @@ export function Badge({ className, variant = "neutral", ...props }: BadgeProps) 
   );
 }
 
-export const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  WISHLIST: "Wishlist",
-  APPLIED: "Applied",
-  SCREENING: "Screening",
-  INTERVIEW: "Interview",
-  OFFER: "Offer",
-  ACCEPTED: "Accepted",
-  REJECTED: "Rejected",
-};
-
-const STATUS_CLASSES: Record<ApplicationStatus, string> = {
+export const STATUS_CLASSES: Record<ApplicationStatus, string> = {
   WISHLIST: "bg-status-wishlist-bg text-status-wishlist-fg",
   APPLIED: "bg-status-applied-bg text-status-applied-fg",
   SCREENING: "bg-status-screening-bg text-status-screening-fg",
@@ -60,7 +49,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
         STATUS_CLASSES[status],
         className,
       )}
@@ -69,12 +58,6 @@ export function StatusBadge({
     </span>
   );
 }
-
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  LOW: "Low",
-  MEDIUM: "Medium",
-  HIGH: "High",
-};
 
 const PRIORITY_CLASSES: Record<Priority, string> = {
   LOW: "bg-priority-low-bg text-priority-low-fg",
@@ -92,7 +75,7 @@ export function PriorityBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold",
         PRIORITY_CLASSES[priority],
         className,
       )}

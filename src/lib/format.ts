@@ -1,4 +1,22 @@
-import type { EmploymentType } from "@prisma/client";
+import type { ApplicationStatus, EmploymentType, Priority } from "@prisma/client";
+
+export type BadgeVariant = "neutral" | "primary" | "success" | "warning" | "destructive" | "info";
+
+export const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  WISHLIST: "Wishlist",
+  APPLIED: "Applied",
+  SCREENING: "Screening",
+  INTERVIEW: "Interview",
+  OFFER: "Offer",
+  ACCEPTED: "Accepted",
+  REJECTED: "Rejected",
+};
+
+export const PRIORITY_LABELS: Record<Priority, string> = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+};
 
 export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   FULL_TIME: "Full-time",

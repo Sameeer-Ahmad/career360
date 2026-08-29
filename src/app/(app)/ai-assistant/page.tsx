@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getApplication, NotFoundError } from "@/lib/applications";
+import { getApplication, NotFoundError } from "@/lib/applications/applications";
+import { isValidObjectId } from "@/lib/object-id";
 import { Header } from "@/components/shell/header";
-import { CareerAssistant, type AssistantApplicationContext } from "@/components/ai/career-assistant";
+import { CareerAssistant, type AssistantApplicationContext } from "@/components/ai-assistant/career-assistant";
 
 export default async function AIAssistantPage({
   searchParams,
@@ -17,14 +18,14 @@ export default async function AIAssistantPage({
   const resolvedSearchParams = await searchParams;
   const rawApplicationId = resolvedSearchParams.applicationId;
   const applicationIdParam = Array.isArray(rawApplicationId) ? rawApplicationId[0] : rawApplicationId;
-  const applicationId = applicationIdParam ? Number(applicationIdParam) : NaN;
+  const applicationId = applicationIdParam && isValidObjectId(applicationIdParam) ? applicationIdParam : null;
 
   let applicationContext: AssistantApplicationContext | undefined;
-  if (Number.isInteger(applicationId) && applicationId > 0) {
+  if (applicationId !== null) {
     try {
       // Re-verifies ownership here too (in addition to the API route) purely so we
       // only show the context chip for applications this user actually owns.
-      const application = await getApplication(Number(session.user.id), applicationId);
+      const application = await getApplication(session.user.id, applicationId);
       applicationContext = {
         id: application.id,
         jobTitle: application.jobTitle,
