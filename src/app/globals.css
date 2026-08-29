@@ -4,22 +4,35 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Core surfaces */
-  --background: #ffffff;
-  --foreground: #14141a;
+  /* Core surfaces — true neutral (no blue/purple cast). Background is a
+     hair off pure white so `--card` (still pure white) visibly elevates
+     above it — the same "surface lighter than page" relationship dark
+     mode already has, just inverted (mirrors GitHub/Linear-style light
+     themes rather than a flat, undifferentiated white-on-white page).
+     Contrast-verified with a WCAG script: muted-foreground still clears
+     4.5:1 against every surface below. */
+  --background: #fafafb;
+  --foreground: #17171a;
   --card: #ffffff;
-  --card-foreground: #14141a;
-  --muted: #f4f4f6;
-  --muted-foreground: #6b6b76;
-  --border: #e4e4e9;
-  --input: #ffffff;
-  --ring: #6366f1;
+  --card-foreground: #17171a;
+  --muted: #f2f2f4;
+  --muted-foreground: #6b6b70;
+  --border: #e2e2e6;
+  --input: #f6f6f7;
+  --ring: #0f9f78;
 
-  /* Brand / semantic */
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f6;
-  --secondary-foreground: #14141a;
+  /* Brand / semantic — emerald primary. #0F9F78 fails AA with white text
+     (3.36:1) but passes at 4.62:1 with the dark-accent foreground below —
+     verified with a WCAG contrast script, not eyeballed. Hover darkens to
+     #0B8062, which in turn fails AA with dark text (max 4.28:1) but passes
+     with white (4.91:1) — so hover swaps the button's text color too,
+     animated by the existing `transition-colors` on Button/IconButton. */
+  --primary: #0f9f78;
+  --primary-foreground: #0a2922;
+  --primary-hover: #0b8062;
+  --primary-hover-foreground: #ffffff;
+  --secondary: #f2f2f4;
+  --secondary-foreground: #17171a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --success: #16a34a;
@@ -30,17 +43,22 @@
   --info-foreground: #ffffff;
 
   /* Sidebar */
-  --sidebar: #fafafa;
-  --sidebar-foreground: #14141a;
-  --sidebar-border: #e4e4e9;
-  --sidebar-active-bg: #eef0ff;
-  --sidebar-active-foreground: #4338ca;
+  --sidebar: #fafafb;
+  --sidebar-foreground: #17171a;
+  --sidebar-border: #e2e2e6;
+  --sidebar-active-bg: #e1f5ee;
+  --sidebar-active-foreground: #0b8062;
 
-  /* Status badges (soft tint bg + saturated fg) */
+  /* Status badges (soft tint bg + saturated fg). Wishlist/Screening/
+     Interview/Offer/Accepted/Rejected are unchanged — their hues already
+     read clearly and distinctly against the emerald primary. Applied
+     moves from indigo to blue, since indigo was specifically the
+     brand-identity color being retired and Applied has no fixed semantic
+     hue to preserve. */
   --status-wishlist-bg: #f4f4f6;
   --status-wishlist-fg: #52525b;
-  --status-applied-bg: #e0e7ff;
-  --status-applied-fg: #4338ca;
+  --status-applied-bg: #dbeafe;
+  --status-applied-fg: #1d4ed8;
   --status-screening-bg: #fef3c7;
   --status-screening-fg: #92400e;
   --status-interview-bg: #f3e8ff;
@@ -65,44 +83,51 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
-  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06);
-  --shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 8px 24px -4px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 4px 0 rgb(0 0 0 / 0.08);
+  --shadow-popover: 0 4px 8px -1px rgb(0 0 0 / 0.1), 0 8px 28px -4px rgb(0 0 0 / 0.14);
 }
 
 .dark {
-  --background: #0a0a0d;
-  --foreground: #f2f2f5;
-  --card: #131318;
-  --card-foreground: #f2f2f5;
-  --muted: #1c1c22;
-  --muted-foreground: #9797a3;
-  --border: #2a2a32;
-  --input: #131318;
-  --ring: #818cf8;
+  /* Refined charcoal/near-black — true neutral (no blue/purple cast). */
+  --background: #0a0a0b;
+  --foreground: #f2f2f2;
+  --card: #121213;
+  --card-foreground: #f2f2f2;
+  --muted: #1b1b1c;
+  --muted-foreground: #9a9a9d;
+  --border: #29292b;
+  --input: #121213;
+  --ring: #34d399;
 
-  --primary: #818cf8;
-  --primary-foreground: #0a0a0d;
-  --secondary: #1c1c22;
-  --secondary-foreground: #f2f2f5;
+  /* Bright emerald accent — passes AA with the dark-accent foreground at
+     8.07:1 (verified). Hover deepens to the light-mode primary shade,
+     which still passes at 4.62:1 with the same dark text, so — unlike the
+     light-mode hover — no text-color swap is needed here. */
+  --primary: #34d399;
+  --primary-foreground: #0a2922;
+  --primary-hover: #0f9f78;
+  --primary-hover-foreground: #0a2922;
+  --secondary: #1b1b1c;
+  --secondary-foreground: #f2f2f2;
   --destructive: #f87171;
-  --destructive-foreground: #0a0a0d;
+  --destructive-foreground: #0a0a0b;
   --success: #4ade80;
-  --success-foreground: #0a0a0d;
+  --success-foreground: #0a0a0b;
   --warning: #fbbf24;
-  --warning-foreground: #0a0a0d;
+  --warning-foreground: #0a0a0b;
   --info: #38bdf8;
-  --info-foreground: #0a0a0d;
+  --info-foreground: #0a0a0b;
 
-  --sidebar: #0d0d11;
-  --sidebar-foreground: #f2f2f5;
-  --sidebar-border: #232329;
-  --sidebar-active-bg: #1e1b4b;
-  --sidebar-active-foreground: #c7d2fe;
+  --sidebar: #0d0d0e;
+  --sidebar-foreground: #f2f2f2;
+  --sidebar-border: #232325;
+  --sidebar-active-bg: #123b31;
+  --sidebar-active-foreground: #34d399;
 
   --status-wishlist-bg: #1c1c22;
   --status-wishlist-fg: #d4d4d8;
-  --status-applied-bg: #26265c;
-  --status-applied-fg: #a5b4fc;
+  --status-applied-bg: #1e2f5c;
+  --status-applied-fg: #93c5fd;
   --status-screening-bg: #45330a;
   --status-screening-fg: #fcd34d;
   --status-interview-bg: #3b1664;
@@ -138,6 +163,8 @@
 
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-hover-foreground: var(--primary-hover-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-destructive: var(--destructive);
@@ -184,8 +211,9 @@
   --shadow-card: var(--shadow-card);
   --shadow-popover: var(--shadow-popover);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", ui-serif, serif;
 }
 
 html {
@@ -215,7 +243,25 @@ body {
   box-sizing: border-box;
 }
 
-a {
+/* In @layer base (not bare CSS) so it loses to Tailwind's utility-layer
+   text-color classes — bare CSS in Tailwind v4 outranks every layer
+   regardless of specificity, which was silently overriding buttonVariants'
+   text-primary-foreground on every <Link>-based button (e.g. "Add
+   Application"), leaving near-invisible text on the primary button color. */
+@layer base {
+  a {
+    color: inherit;
+  }
+}
+
+/* Editorial accent for a short word/phrase inside a landing-page headline —
+   sits inline with the surrounding Manrope heading, inherits its color and
+   size, and only swaps the family/weight/style. Not a general-purpose
+   heading style; landing-page headlines only. */
+.font-display-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
   color: inherit;
 }
 
@@ -228,5 +274,29 @@ a {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Landing page only — a gentle idle float for the hero's floating product
+   badges, and a very slow ambient drift for background glows. Both are
+   fully neutralized by the prefers-reduced-motion block above (it forces
+   a single ~0ms iteration), so no extra guarding is needed at call sites. */
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes landing-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(2%, 3%) scale(1.05);
   }
 }

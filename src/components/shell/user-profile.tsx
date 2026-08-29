@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 type ShellUser = {
   name?: string | null;
   email?: string | null;
@@ -5,11 +9,12 @@ type ShellUser = {
 };
 
 export function UserProfile({ user }: { user: ShellUser }) {
+  const [imageFailed, setImageFailed] = useState(false);
   const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
 
   return (
     <div className="flex items-center gap-2.5 rounded-md px-1 py-1.5">
-      {user.avatarUrl ? (
+      {user.avatarUrl && !imageFailed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={user.avatarUrl}
@@ -17,6 +22,10 @@ export function UserProfile({ user }: { user: ShellUser }) {
           width={32}
           height={32}
           className="size-8 shrink-0 rounded-full object-cover"
+          // Google's profile-picture URLs aren't permanent — if the stored
+          // one has gone stale, fall back to the initials circle instead
+          // of showing the browser's broken-image icon.
+          onError={() => setImageFailed(true)}
         />
       ) : (
         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-medium text-primary">

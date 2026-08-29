@@ -11,7 +11,7 @@ const sizeClasses: Record<IconButtonSize, string> = {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-primary-foreground hover:opacity-90",
+  primary: "bg-primary text-primary-foreground hover:bg-primary-hover hover:text-primary-hover-foreground",
   secondary: "bg-secondary text-secondary-foreground hover:opacity-80",
   outline: "border border-border bg-transparent text-foreground hover:bg-muted",
   ghost: "bg-transparent text-foreground hover:bg-muted",
@@ -20,9 +20,9 @@ const variantClasses: Record<ButtonVariant, string> = {
 
 export function iconButtonVariants(variant: ButtonVariant = "ghost", size: IconButtonSize = "md") {
   return cn(
-    "inline-flex shrink-0 items-center justify-center rounded-md transition-colors",
+    "inline-flex shrink-0 items-center justify-center rounded-md transition-all active:scale-[0.94]",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-    "disabled:pointer-events-none disabled:opacity-50",
+    "disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100",
     variantClasses[variant],
     sizeClasses[size],
   );
