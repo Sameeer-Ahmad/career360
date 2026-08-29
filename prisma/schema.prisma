@@ -25,10 +25,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts     Account[]
-  sessions     Session[]
-  applications Application[]
-  documents    Document[]
+  accounts      Account[]
+  sessions      Session[]
+  applications  Application[]
+  documents     Document[]
+  learningPaths LearningPath[]
 }
 
 model Account {
@@ -93,9 +94,10 @@ model Application {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company       Company    @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  taggedResumes Document[] @relation("DocumentApplication")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  taggedResumes Document[]     @relation("DocumentApplication")
+  learningPaths LearningPath[]
 
   @@index([userId, status])
   @@index([companyId])
@@ -143,6 +145,150 @@ model Document {
   @@index([sourceDocumentId])
   @@index([masterDocumentId])
   @@index([applicationId])
+}
+
+model LearningPath {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String             @db.ObjectId
+  source        LearningPathSource
+  // Optional regardless of source — a RECOMMENDED path may or may not be
+  // tied to a specific application (a general "based on your whole
+  // profile" recommendation has none); an APPLICATION path always has one.
+  applicationId String?            @db.ObjectId
+  title         String
+  summary       String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application Application?    @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  topics      LearningTopic[]
+
+  @@index([userId])
+  @@index([applicationId])
+}
+
+model LearningTopic {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  learningPathId   String           @db.ObjectId
+  topic            String
+  reason           String
+  priority         LearningPriority
+  currentLevel     SkillLevel?
+  recommendedLevel SkillLevel?
+  prerequisites    String[]
+  order            Int              @default(0)
+  createdAt        DateTime         @default(now())
+
+  learningPath LearningPath       @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  resources    LearningResource[]
+  note         LearningNote?
+  progress     LearningProgress?
+
+  @@index([learningPathId])
+}
+
+model LearningNote {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  learningTopicId String   @db.ObjectId
+  content         String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  learningTopic LearningTopic @relation(fields: [learningTopicId], references: [id], onDelete: Cascade)
+
+  @@unique([learningTopicId])
+}
+
+model LearningProgress {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  learningTopicId String         @db.ObjectId
+  status          ProgressStatus @default(NOT_STARTED)
+  completedAt     DateTime?
+  updatedAt       DateTime       @updatedAt
+
+  learningTopic LearningTopic @relation(fields: [learningTopicId], references: [id], onDelete: Cascade)
+
+  @@unique([learningTopicId])
+}
+
+model LearningResource {
+  id                 String                   @id @default(auto()) @map("_id") @db.ObjectId
+  learningTopicId    String                   @db.ObjectId
+  type               LearningResourceType
+  provider           LearningResourceProvider
+  discoveryMethod    ResourceDiscoveryMethod
+  title              String
+  whyRecommended     String
+  // User-supplied optional description — only ever set for USER_ADDED
+  // resources; YouTube/documentation resources use whyRecommended instead.
+  description        String?
+  url                String
+  thumbnailUrl       String?
+  providerResourceId String
+  channelName        String?
+  channelId          String?
+  durationSeconds    Int?
+  itemCount          Int?
+  publishedAt        DateTime?
+  viewCount          Int?
+  isOfficial         Boolean                  @default(false)
+  relevanceScore     Float
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  learningTopic LearningTopic @relation(fields: [learningTopicId], references: [id], onDelete: Cascade)
+
+  @@unique([learningTopicId, provider, providerResourceId])
+  @@index([learningTopicId])
+  @@index([type])
+  @@index([relevanceScore])
+}
+
+enum LearningPathSource {
+  PERSONAL
+  APPLICATION
+  RECOMMENDED
+}
+
+enum LearningPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum SkillLevel {
+  NONE
+  FAMILIAR
+  PROFICIENT
+}
+
+enum LearningResourceType {
+  VIDEO
+  PLAYLIST
+  DOCUMENTATION
+  ARTICLE
+  COURSE
+  GITHUB
+  OTHER
+}
+
+enum LearningResourceProvider {
+  YOUTUBE
+  OFFICIAL_DOCS
+  USER_LINK
+}
+
+enum ResourceDiscoveryMethod {
+  SEARCH
+  CURATED
+  USER_ADDED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
 }
 
 enum DocumentType {
