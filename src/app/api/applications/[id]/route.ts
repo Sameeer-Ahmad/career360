@@ -1,34 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/api-auth";
 import {
   deleteApplication,
   getApplication,
   NotFoundError,
   updateApplication,
   ValidationError,
-} from "@/lib/applications";
+} from "@/lib/applications/applications";
+import { parseObjectId } from "@/lib/object-id";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-function parseId(idParam: string): number | null {
-  const id = Number(idParam);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
 export async function GET(_request: NextRequest, { params }: RouteParams) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const { id: idParam } = await params;
-  const id = parseId(idParam);
+  const id = parseObjectId(idParam);
   if (id === null) {
     return NextResponse.json({ error: "Invalid application id" }, { status: 400 });
   }
 
   try {
-    const application = await getApplication(Number(session.user.id), id);
+    const application = await getApplication(userId, id);
     return NextResponse.json(application);
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -39,13 +33,11 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const { id: idParam } = await params;
-  const id = parseId(idParam);
+  const id = parseObjectId(idParam);
   if (id === null) {
     return NextResponse.json({ error: "Invalid application id" }, { status: 400 });
   }
@@ -58,7 +50,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    const application = await updateApplication(Number(session.user.id), id, body);
+    const application = await updateApplication(userId, id, body);
     return NextResponse.json(application);
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -72,19 +64,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const userId = await requireUserId();
+  if (userId instanceof NextResponse) return userId;
 
   const { id: idParam } = await params;
-  const id = parseId(idParam);
+  const id = parseObjectId(idParam);
   if (id === null) {
     return NextResponse.json({ error: "Invalid application id" }, { status: 400 });
   }
 
   try {
-    await deleteApplication(Number(session.user.id), id);
+    await deleteApplication(userId, id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     if (error instanceof NotFoundError) {
