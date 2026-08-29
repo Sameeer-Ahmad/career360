@@ -1,22 +1,16 @@
 // Server-only Google OAuth handling for the Calendar connection flow —
-// entirely separate from src/auth.ts (NextAuth), which owns login and must
-// never be touched by this. Reuses the same Google OAuth Client
-// (AUTH_GOOGLE_ID/AUTH_GOOGLE_SECRET, already configured for login) — a
-// single Google Cloud OAuth client can serve multiple authorization flows
-// requesting different scopes, so no new credentials are needed. Never
-// logs a code, access token, or refresh token — only status/reason
-// diagnostics.
+// entirely separate from src/auth.ts (NextAuth), which owns login. Reuses
+// the same Google OAuth client (AUTH_GOOGLE_ID/AUTH_GOOGLE_SECRET). Never
+// logs a code, access token, or refresh token.
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 
-// The narrowest scope that supports create/read/update/delete on the
-// user's own calendars — deliberately not the broader `calendar` scope,
-// which would also grant access to calendars merely shared with the user.
-// `email` is added on top so the connection UI can show which Google
-// account is connected (see fetchGoogleAccountEmail below) — it grants no
-// Calendar access itself and is unrelated to Career360's own login.
+// The narrowest scope for create/read/update/delete on the user's own
+// calendars — not the broader `calendar` scope, which would also grant
+// access to calendars merely shared with the user. `email` is added so the
+// connection UI can show which Google account is connected.
 export const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events.owned email";
 
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
@@ -42,15 +36,10 @@ function getClientCredentials(): { clientId: string; clientSecret: string } {
 
 /**
  * Builds the Google consent-screen URL for the Calendar connection flow.
- * `access_type=offline` + `prompt=consent` together guarantee a refresh
- * token is issued on every connection (Google only returns one on the
- * very first consent otherwise) — needed since Calendar API calls happen
- * server-side, unattended, well after the user's browser session ends.
- * `select_account` is included alongside `consent` so reconnecting always
- * shows Google's account chooser instead of silently reusing whichever
- * Google account the browser is currently signed into — the whole point
- * of a "change Google Calendar account" flow is letting the user pick a
- * different one.
+ * `access_type=offline` + `prompt=consent` guarantee a refresh token is
+ * issued every time (Google only returns one on the very first consent
+ * otherwise). `select_account` ensures reconnecting always shows the
+ * account chooser rather than silently reusing the signed-in account.
  */
 export function buildGoogleAuthUrl(redirectUri: string, state: string): string {
   const { clientId } = getClientCredentials();
@@ -65,13 +54,7 @@ export function buildGoogleAuthUrl(redirectUri: string, state: string): string {
   return url.toString();
 }
 
-/**
- * Best-effort lookup of the connected Google account's email, for display
- * only (see GoogleCalendarConnection.googleEmail) — never used for
- * authorization or identity decisions. Returns null on any failure
- * (missing scope grant, network error, unexpected shape) rather than
- * throwing, since a connection must still succeed even if this fails.
- */
+/** Best-effort lookup of the connected Google account's email, for display only. Returns null on any failure rather than throwing — the connection must still succeed even if this fails. */
 export async function fetchGoogleAccountEmail(accessToken: string): Promise<string | null> {
   try {
     const response = await fetch(GOOGLE_USERINFO_URL, {

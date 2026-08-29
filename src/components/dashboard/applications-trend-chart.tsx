@@ -3,9 +3,7 @@
 import { useState } from "react";
 import type { MonthlyTrendPoint } from "@/lib/dashboard/dashboard-stats";
 
-// A hand-rolled SVG chart — six months of real data doesn't warrant a
-// charting dependency. viewBox-based sizing keeps it fully responsive
-// (CSS width: 100%, no fixed pixel measurements needed for resize).
+// Hand-rolled SVG — six months of data doesn't warrant a charting dependency.
 const WIDTH = 600;
 const HEIGHT = 200;
 const PADDING_X = 12;

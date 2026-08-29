@@ -41,14 +41,10 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-/**
- * Parses and validates document input. In partial mode, only the fields
- * present in `body` are checked/returned. Deliberately does NOT accept
- * `sourceDocumentId`/`masterDocumentId` — those are set only by
- * createTailoredResume, never editable via this general path (otherwise a
- * caller could reparent a document onto an arbitrary — possibly not-owned —
- * source).
- */
+// In partial mode, only fields present in `body` are checked/returned.
+// Deliberately doesn't accept sourceDocumentId/masterDocumentId — those are
+// set only by createTailoredResume, so a caller can't reparent a document
+// onto an arbitrary (possibly not-owned) source.
 function parseDocumentInput(
   body: unknown,
   { partial }: { partial: boolean },
@@ -126,13 +122,8 @@ function parseDocumentInput(
   return data;
 }
 
-/**
- * Verifies the given application belongs to the user. Delegates to the
- * shared ownership check in applications.ts (single source of truth for
- * the actual query) and translates its NotFoundError into this module's
- * own NotFoundError ("Document not found"), matching this file's existing
- * error-shape convention for every other document-domain failure.
- */
+// Delegates to the shared ownership check in applications.ts and translates
+// its NotFoundError into this module's own ("Document not found").
 async function assertApplicationOwnership(userId: string, applicationId: string): Promise<void> {
   try {
     await assertApplicationOwnershipShared(userId, applicationId);
@@ -155,9 +146,8 @@ export async function createDocument(userId: string, body: unknown) {
     await assertApplicationOwnership(userId, input.applicationId);
   }
 
-  // `type` itself defaults to RESUME at the Prisma schema level when omitted
-  // — resolve that here too so the resumeRole default below sees the same
-  // effective type the database will actually store.
+  // `type` defaults to RESUME at the schema level when omitted — resolve it
+  // here too so the resumeRole default below matches what gets stored.
   const resolvedType = input.type ?? DocumentType.RESUME;
 
   // New standalone resumes default to MAIN unless the user explicitly picks MASTER.
@@ -173,11 +163,9 @@ export async function createDocument(userId: string, body: unknown) {
       resumeRole,
       content: input.content,
       applicationId: input.applicationId ?? null,
-      // Explicitly written (not omitted) — MongoDB, unlike MySQL, only
-      // matches a `field: null` query filter against a field that was
-      // actually stored as null, not one left unset entirely. Omitting
-      // these here would silently break listResumeWorkspace's
-      // `sourceDocumentId: null` query for every standalone resume.
+      // Explicitly written, not omitted — MongoDB only matches a `field: null`
+      // query against a field actually stored as null, not one left unset.
+      // Omitting this would break listResumeWorkspace's query for standalone resumes.
       sourceDocumentId: null,
       masterDocumentId: null,
     },
@@ -194,7 +182,7 @@ export async function listDocuments(userId: string, filters: { type?: DocumentTy
   });
 }
 
-/** Every document (any type, tailored or not) tagged to a given application — powers Application Detail's "Documents used for this application" section. Scoped to userId directly, same as listDocuments, so it can never return another user's document even given a foreign applicationId. */
+/** Documents tagged to a given application — powers Application Detail's "Documents used for this application" section. Scoped to userId, not just applicationId, so a foreign id can't leak another user's document. */
 export async function listDocumentsForApplication(userId: string, applicationId: string) {
   return prisma.document.findMany({
     where: { userId, applicationId },
@@ -202,12 +190,8 @@ export async function listDocumentsForApplication(userId: string, applicationId:
   });
 }
 
-/**
- * The user's standalone (non-tailored) resumes, grouped into Main and
- * Master, each with its tailored versions eagerly loaded (avoids an N+1
- * query when rendering the workspace view). Both are optional — either
- * group can be empty.
- */
+// The user's standalone (non-tailored) resumes, grouped into Main and
+// Master, each with its tailored versions eagerly loaded (avoids N+1s).
 export async function listResumeWorkspace(userId: string) {
   const resumes = await prisma.document.findMany({
     where: { userId, type: DocumentType.RESUME, sourceDocumentId: null },
@@ -297,20 +281,11 @@ export async function deleteDocument(userId: string, id: string) {
   await cascadeDeleteDocumentTree(id);
 }
 
-/**
- * Recursively deletes `id` and every tailored version derived from it,
- * leaf-first. Prisma's MongoDB connector REQUIRES onDelete: NoAction on
- * both Document self-relations (schema-validation-time restriction,
- * confirmed empirically against 6.19.3) and, at runtime, actively BLOCKS
- * deleting a document that's still referenced as a source or master rather
- * than cascading or leaving a dangling reference — so both the MySQL
- * schema's cascade (source -> tailored versions) and set-null
- * (master -> tailored versions) behavior have to be reproduced here
- * explicitly. A tailored version can itself have been further tailored
- * (sourceDocumentId chains aren't limited to depth 1), so this recurses
- * into each child's own children before deleting the child, all the way
- * down, before finally deleting `id` itself.
- */
+// Recursively deletes `id` and every tailored version derived from it,
+// leaf-first. Prisma's MongoDB connector requires onDelete: NoAction on
+// Document self-relations and blocks deleting a document still referenced
+// as a source or master, so cascade/set-null have to be done manually here.
+// sourceDocumentId chains can be more than one level deep, hence the recursion.
 async function cascadeDeleteDocumentTree(id: string): Promise<void> {
   const children = await prisma.document.findMany({ where: { sourceDocumentId: id }, select: { id: true } });
   for (const child of children) {
@@ -320,14 +295,9 @@ async function cascadeDeleteDocumentTree(id: string): Promise<void> {
   await prisma.document.delete({ where: { id } });
 }
 
-/**
- * Creates a new resume document derived from `sourceDocumentId` (the resume
- * actually being tailored — typically the Main Resume, but any standalone or
- * even already-tailored resume is allowed). Never modifies the source —
- * tailoring always produces a separate row. The source document, the
- * optional Master Resume consulted, and the optional application are all
- * ownership-checked independently before anything is written.
- */
+// Creates a new resume derived from `sourceDocumentId` — typically the Main
+// Resume, but any standalone or already-tailored resume is allowed. Never
+// modifies the source; tailoring always produces a separate row.
 export async function createTailoredResume(
   userId: string,
   sourceDocumentId: string,
@@ -382,9 +352,8 @@ export async function createTailoredResume(
     await assertApplicationOwnership(userId, applicationId);
   }
 
-  // Using the same document as both the source being tailored and the
-  // Master reference doesn't mean anything — quietly treat it as "no master
-  // was used" rather than erroring over a harmless input.
+  // Using the same document as both source and master is meaningless —
+  // treat it as "no master" rather than erroring over a harmless input.
   if (masterDocumentId === sourceDocumentId) {
     masterDocumentId = null;
   }

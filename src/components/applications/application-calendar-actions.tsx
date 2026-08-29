@@ -10,11 +10,7 @@ import { calendarEventHref, formatEventWhen, isFutureDateTime } from "@/lib/goog
 import { DEFAULT_REMINDER_MINUTES } from "@/lib/google-calendar/mapping";
 import { buildApplicationSlug } from "@/lib/applications/application-slug";
 
-// The internal Career360 calendar is the primary interaction — "Open in
-// Calendar" here always means /calendar (via calendarEventHref), never the
-// Google Calendar URL. A secondary "Open in Google Calendar" link, if
-// wanted, lives on the event's own detail dialog inside /calendar, not
-// duplicated here.
+// "Open in Calendar" always means the internal /calendar route, never Google's URL.
 type AddedEvent = { id: string; title: string; start: string | null };
 
 function EventAddedSummary({ label, event }: { label: string; event: AddedEvent }) {

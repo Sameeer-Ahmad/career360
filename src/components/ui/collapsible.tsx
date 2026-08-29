@@ -14,9 +14,8 @@ export function Collapsible({
 }: {
   title: ReactNode;
   defaultOpen?: boolean;
-  /** Controlled open state — when provided (with onOpenChange), the parent owns whether this is open, e.g. to jump to and expand a specific row from elsewhere in the UI. Omit for the default uncontrolled behavior. */
+  /** Controlled open state — omit for default uncontrolled behavior. */
   open?: boolean;
-  /** Called whenever the open state changes — e.g. to lazily fetch content the first time it's expanded, or to update controlled `open` state. */
   onOpenChange?: (open: boolean) => void;
   children: ReactNode;
   className?: string;

@@ -32,9 +32,6 @@ export function ApplicationsFilterBar() {
   const [searchInput, setSearchInput] = useState(searchParams.get("q") ?? "");
 
   // Stay in sync if the URL changes from elsewhere (e.g. browser back/forward).
-  // This project's lint config forbids both the effect+setState pattern and the
-  // ref-during-render alternative React's docs otherwise recommend for this case
-  // (see src/components/theme/theme-provider.tsx for the same tradeoff).
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchInput(searchParams.get("q") ?? "");

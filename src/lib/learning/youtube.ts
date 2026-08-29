@@ -1,12 +1,5 @@
-// Server-only YouTube Data API v3 client. Used exclusively by Learning
-// Resources (src/lib/learning-resources.ts) to find VIDEO/PLAYLIST
-// resources for a LearningTopic. YOUTUBE_API_KEY is read from the
-// environment and never leaves this module; neither the key, full request
-// URLs (which carry the key as a query param), nor response bodies are
-// ever logged — only status/reason diagnostics are. Deliberately limited
-// to four operations (video search, playlist search, batched video
-// metadata, batched playlist metadata) — see learning-resources.ts for why
-// channels.list and playlistItems.list are intentionally not used.
+// Server-only YouTube Data API v3 client, used by learning-resources.ts.
+// The API key and response bodies are never logged — only status/reason diagnostics.
 
 const YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3";
 
@@ -53,13 +46,7 @@ function reasonFromErrorBody(body: unknown): string | undefined {
 
 const QUOTA_REASONS = new Set(["quotaExceeded", "dailyLimitExceeded", "rateLimitExceeded", "userRateLimitExceeded"]);
 
-/**
- * Performs one GET against the YouTube Data API. Never logs the URL (it
- * carries the API key as a query param) or the response body — only the
- * endpoint name, status, and provider-supplied reason code. Throws
- * YouTubeConfigError, YouTubeQuotaError, or YouTubeRequestError — never a
- * raw fetch/provider error.
- */
+/** One GET against the YouTube Data API. Never logs the URL or response body — only status/reason. Throws YouTubeConfigError, YouTubeQuotaError, or YouTubeRequestError, never a raw fetch error. */
 async function get(endpoint: string, params: Record<string, string>): Promise<unknown> {
   const apiKey = getApiKey();
   const url = new URL(`${YOUTUBE_API_URL}/${endpoint}`);
@@ -190,11 +177,7 @@ function parseVideoMetadata(raw: unknown): YouTubeVideoMetadata | null {
   };
 }
 
-/**
- * One batched videos.list call for up to 50 IDs (1 unit regardless of
- * count) — never one call per video. Returns an empty array for an empty
- * input without making a request.
- */
+/** One batched videos.list call for up to 50 IDs — never one call per video. Empty input skips the request. */
 export async function getVideoMetadata(videoIds: string[]): Promise<YouTubeVideoMetadata[]> {
   if (videoIds.length === 0) return [];
   const data = await get("videos", {

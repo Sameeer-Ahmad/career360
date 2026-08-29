@@ -1,10 +1,5 @@
-/**
- * Produces a rough, plain-text APPROXIMATION of LaTeX source for preview
- * purposes only. This is NOT a LaTeX compiler and does not attempt to
- * reproduce the rendered PDF layout — it strips common commands so the
- * text content is readable, nothing more. Callers must label this clearly
- * as an approximation; real compilation is a deferred, separate capability.
- */
+// Rough plain-text approximation for preview only — not a LaTeX compiler,
+// doesn't reproduce the actual PDF layout.
 export function approximateLatexPreview(source: string): string {
   let text = source;
 

@@ -1,10 +1,7 @@
-// Kept separate from src/lib/documents.ts (which imports the Prisma client)
-// and src/lib/resume-extraction.ts (which imports the PDF/DOCX parsers) so
-// client components can import just these constants without pulling
-// server-only code into the browser bundle.
+// Kept separate from documents.ts (Prisma) and resume-extraction.ts (PDF/DOCX
+// parsers) so client components can import just these constants.
 export const MAX_TITLE_LENGTH = 200;
-// Raised from 15,000 to accommodate a Master Resume covering multiple roles,
-// projects, and bullet variations (spec calls for "3-4+ pages or even longer").
+// Generous enough for a Master Resume covering multiple roles and projects.
 export const MAX_DOCUMENT_CONTENT_LENGTH = 40000;
 
 export const MAX_UPLOAD_FILE_SIZE_BYTES = 8 * 1024 * 1024; // 8 MB

@@ -8,18 +8,9 @@ import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import { STATUS_LABELS } from "@/lib/format";
 
-// Same derivation the existing status filter dropdown uses (applications-filter-bar.tsx)
-// — one source of truth for status ordering, not a second enum list.
 const APPLICATION_STATUSES = Object.keys(STATUS_LABELS) as ApplicationStatus[];
 
-/**
- * Status shown as the existing colored badge, but as a real <select> —
- * changing it PATCHes only the status field via the existing
- * /api/applications/[id] route (Prisma's `undefined` == "don't touch this
- * field", so nothing else on the application is affected). Optimistic:
- * the badge/select updates the instant a new status is picked, and rolls
- * back to the previous value if the request fails.
- */
+/** Optimistic status <select>: updates immediately, rolls back on a failed PATCH. */
 export function ApplicationStatusSelect({
   applicationId,
   initialStatus,

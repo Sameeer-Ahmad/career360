@@ -1,9 +1,7 @@
 import { ArrowRight, ScanSearch } from "lucide-react";
 import { Reveal } from "@/components/landing/reveal";
 
-// A job-posting excerpt with a few phrases styled as "detected" — never a
-// real posting, just enough document texture to read as a job description
-// rather than an abstract diagram.
+// Illustrative job-posting excerpt with a few phrases styled as "detected".
 const DOCUMENT_LINES: (string | { highlight: string })[] = [
   "We're looking for a Frontend Engineer to join our platform team.",
   { highlight: "3+ years of experience with React and TypeScript" },

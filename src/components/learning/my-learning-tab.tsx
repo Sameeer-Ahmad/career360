@@ -8,10 +8,6 @@ import { PathListRow } from "@/components/learning/learning-shared";
 import { PathWorkspace } from "@/components/learning/path-workspace";
 import type { SavedPathListItem } from "@/components/learning/learning-types";
 
-// ---------------------------------------------------------------------------
-// My Learning tab — all saved paths, any source.
-// ---------------------------------------------------------------------------
-
 export function MyLearningTab({ reloadKey, calendarConnected }: { reloadKey: number; calendarConnected: boolean }) {
   const [paths, setPaths] = useState<SavedPathListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);

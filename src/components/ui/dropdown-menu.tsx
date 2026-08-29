@@ -31,10 +31,7 @@ export function DropdownMenu({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!open) return;
 
-    // pointerdown (not mousedown) — fires uniformly for mouse, touch, and
-    // pen, so outside-tap detection is just as reliable on mobile as on
-    // desktop. Still fires before the item's own click, so an item tap
-    // never gets closed out from under itself (see the "inside" check).
+    // pointerdown (not mousedown) so this also works reliably on touch.
     function handlePointerDown(event: PointerEvent) {
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
     }

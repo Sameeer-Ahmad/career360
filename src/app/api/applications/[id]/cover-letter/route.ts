@@ -28,12 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   }
 }
 
-/**
- * Saves (or updates) this application's cover letter. Idempotent per
- * application — at most one COVER_LETTER document exists per (user,
- * application), so calling this again after editing/regenerating updates
- * the same document instead of creating a duplicate.
- */
+/** Saves (or updates) this application's cover letter — idempotent, never creates a duplicate document. */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;

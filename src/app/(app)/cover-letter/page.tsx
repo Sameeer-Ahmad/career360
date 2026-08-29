@@ -20,10 +20,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 /**
  * The workspace's landing view (no applicationId in the URL): saved cover
- * letters to continue, plus a picker to start a new one. Selecting an
- * application there just navigates to this same page with ?applicationId=
- * set — there's no separate "standalone" editor, so every actual edit still
- * goes through the one applicationId-scoped branch below.
+ * letters to continue, plus a picker to start a new one.
  */
 async function CoverLetterWorkspaceHome({ userId }: { userId: string }) {
   const [coverLetters, applications] = await Promise.all([

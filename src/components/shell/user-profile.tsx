@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type ShellUser = {
+export type ShellUser = {
   name?: string | null;
   email?: string | null;
   avatarUrl?: string | null;
@@ -22,9 +22,7 @@ export function UserProfile({ user }: { user: ShellUser }) {
           width={32}
           height={32}
           className="size-8 shrink-0 rounded-full object-cover"
-          // Google's profile-picture URLs aren't permanent — if the stored
-          // one has gone stale, fall back to the initials circle instead
-          // of showing the browser's broken-image icon.
+          // Falls back to the initials circle if the stored avatar URL has gone stale.
           onError={() => setImageFailed(true)}
         />
       ) : (

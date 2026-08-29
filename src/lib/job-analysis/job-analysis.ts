@@ -212,10 +212,8 @@ function asPriority(value: unknown): PreparationPriority {
 }
 
 /**
- * Parses and normalizes Gemini's raw JSON text into a safe JobAnalysis.
- * Lenient on shape (missing/odd fields default to empty rather than failing
- * the whole response), but throws MalformedAnalysisError if the response
- * isn't even a usable object — never surfaces raw/partial JSON to the user.
+ * Parses Gemini's raw JSON reply into a safe JobAnalysis. Lenient on shape
+ * (missing fields default to empty) but throws if it's not a usable object.
  */
 export function parseJobAnalysis(rawText: string): JobAnalysis {
   let raw: unknown;

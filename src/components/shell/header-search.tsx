@@ -10,10 +10,7 @@ import { cn } from "@/lib/cn";
 
 type ApplicationResult = Pick<Application, "id" | "jobTitle" | "status"> & { company: Pick<Company, "name"> };
 
-// Small results dropdown only — never a Company destination. Reuses the
-// exact search /api/applications?q= now shares with ApplicationsFilterBar
-// (listApplications's existing job-title/company-name filter), so this
-// never duplicates search query logic.
+// Reuses the same /api/applications?q= search ApplicationsFilterBar uses, so this never duplicates search logic.
 const DEBOUNCE_MS = 350;
 const MAX_RESULTS = 6;
 
@@ -30,10 +27,8 @@ export function HeaderSearch({
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ApplicationResult[] | null>(null);
-  // The query `results` was fetched for — lets the dropdown tell "still
-  // waiting on the latest keystroke" apart from "genuinely zero matches"
-  // without a stale flash of the previous query's results while a newer
-  // one is debouncing.
+  // The query `results` was fetched for, so a still-debouncing keystroke
+  // doesn't show a stale flash of the previous query's results.
   const [resultsQuery, setResultsQuery] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,9 +86,7 @@ export function HeaderSearch({
   const resultsAreCurrent = results !== null && resultsQuery === trimmedQuery;
 
   return (
-    // cn() is a plain join here (no tailwind-merge — see lib/cn.ts), so the
-    // default max-width and a caller override (e.g. the mobile overlay's
-    // max-w-none) must never both be present at once.
+    // cn() is a plain join (no tailwind-merge), so className fully replaces the default max-w-sm rather than merging with it.
     <div ref={containerRef} onBlur={handleBlur} className={cn("relative w-full", className ?? "max-w-sm")}>
       <Search
         className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -118,11 +111,7 @@ export function HeaderSearch({
       {showDropdown && (
         <div
           id="header-search-results"
-          // bg-card (not bg-popover — this theme has no --color-popover
-          // token, so that class silently produced no background at all,
-          // which is why dashboard content showed through). shadow-popover
-          // is a real token; z-50 keeps this above every other stacking
-          // context on the page (sticky header is z-30).
+          // bg-card, not bg-popover — this theme has no --color-popover token.
           className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-80 overflow-y-auto rounded-md border border-border bg-card text-card-foreground shadow-popover"
         >
           {!resultsAreCurrent ? (

@@ -34,9 +34,7 @@ export default async function CalendarPage({
   let initialEvents: CalendarEventItem[] | null = null;
   let initialError: string | null = null;
 
-  // Initial paint covers the 6-week grid for the current month (the same
-  // window the client itself will request on navigation) — one Calendar
-  // API call on page load, not a poll.
+  // Initial paint covers the 6-week grid for the current month — one Calendar API call on page load.
   const today = new Date();
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const gridStart = startOfWeek(firstOfMonth);

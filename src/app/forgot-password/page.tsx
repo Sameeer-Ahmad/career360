@@ -3,11 +3,8 @@ import { MailQuestion } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { buttonVariants } from "@/components/ui/button";
 
-/**
- * Career360 has no password-reset infrastructure yet (no reset-token
- * model, no transactional email sending) — this page says so honestly
- * instead of pretending to send a reset email.
- */
+// No password-reset infrastructure yet (no reset-token model, no transactional
+// email) — this page says so honestly instead of pretending to send a reset email.
 export default function ForgotPasswordPage() {
   return (
     <AuthShell

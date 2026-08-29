@@ -14,14 +14,8 @@ import { ResourcesView } from "@/components/learning/resources-view";
 import { NotesView } from "@/components/learning/notes-view";
 import { usePathWorkspace } from "@/components/learning/use-path-workspace";
 
-// ---------------------------------------------------------------------------
-// Path workspace — the full single-path experience: header + Overview /
-// Topics / Resources / Notes, all views of the same fetched path. Resources
-// are fetched once (aggregated across topics) and shared by every view
-// that needs them; Notes are fetched once, lazily, on first opening the
-// Notes tab.
-// ---------------------------------------------------------------------------
-
+// Resources are fetched once and shared across tabs; Notes are fetched lazily,
+// only when the Notes tab is first opened.
 export function PathWorkspace({
   pathId,
   backLabel,

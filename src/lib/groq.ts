@@ -1,25 +1,14 @@
-// Server-only Groq client. Reused by the AI Assistant (free-text, multi-turn)
-// and Learning (structured JSON, single-turn) — the only two Career360
-// features that use Groq. Job Analysis, Resume Analysis, and Resume
-// Tailoring remain on Gemini (src/lib/gemini.ts). GROQ_API_KEY is read from
-// the environment and never leaves this server-side module; neither is
-// resume/JD content or any other request body ever logged — only response
-// status/shape diagnostics are.
+// Server-only Groq client, used by the AI Assistant (multi-turn chat) and
+// Learning (structured JSON). Job Analysis/Resume Analysis/Tailoring use
+// Gemini instead (src/lib/gemini.ts). Request bodies (resume/JD content) are
+// never logged — only response status/shape diagnostics are.
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-// llama-3.3-70b-versatile was retired by Groq (confirmed via a live 404
-// "model_not_found" response — 2026-08-24) and no longer appears in this
-// account's /v1/models list at all. Replaced with openai/gpt-oss-120b, a
-// currently-available general-purpose model on Groq.
 const MODEL = "openai/gpt-oss-120b";
 const MAX_OUTPUT_TOKENS = 800;
 const STRUCTURED_MAX_OUTPUT_TOKENS = 2000;
 const TEMPERATURE = 0.6;
-// gpt-oss-120b is a reasoning model: without this, it can spend most of
-// maxOutputTokens on invisible internal reasoning before emitting the
-// actual reply, truncating it to empty (finish_reason "length", same
-// failure mode already root-caused and fixed for Gemini in src/lib/gemini.ts).
-// "low" is enough headroom for a quick reasoning pass while leaving the
-// budget free for the reply itself — verified live before this change.
+// gpt-oss-120b is a reasoning model: without a cap, it can spend the whole
+// output budget on invisible reasoning and return an empty reply (finish_reason "length").
 const REASONING_EFFORT = "low";
 
 export class GroqConfigError extends Error {
@@ -57,12 +46,7 @@ type ChatCompletionResponse = {
   usage?: unknown;
 };
 
-/**
- * Shared low-level POST to Groq's chat completions endpoint — the exact
- * request/error-handling mechanics both generateAssistantReply and
- * generateStructuredReply use. Returns the first choice, or throws
- * GroqConfigError/GroqRequestError (never a raw provider/network error).
- */
+/** Shared POST to Groq's chat completions endpoint. Returns the first choice, or throws GroqConfigError/GroqRequestError. */
 async function postChatCompletion(body: Record<string, unknown>): Promise<ChatCompletionChoice> {
   const apiKey = getApiKey();
 
@@ -108,12 +92,7 @@ async function postChatCompletion(body: Record<string, unknown>): Promise<ChatCo
   return choice ?? {};
 }
 
-/**
- * Sends a multi-turn conversation to Groq and returns the plain-text reply
- * to the final turn. Never throws the underlying provider/network error to
- * the caller — only GroqConfigError or GroqRequestError, both safe to
- * surface to users.
- */
+/** Sends a multi-turn conversation to Groq and returns the reply to the final turn. */
 export async function generateAssistantReply(
   systemInstruction: string,
   turns: ConversationTurn[],
@@ -139,13 +118,7 @@ export async function generateAssistantReply(
   return text.trim();
 }
 
-/**
- * Asks Groq to return JSON matching the shape described in
- * `systemInstruction` (Groq's json_object mode enforces valid JSON syntax
- * only, not a specific schema — the caller owns parsing/validating its own
- * response shape, exactly like generateStructuredReply in gemini.ts). Used
- * by Learning; single-turn (no conversation history).
- */
+/** Returns JSON text matching the shape described in `systemInstruction` (Groq only enforces valid JSON syntax, not a schema — caller validates the shape). Single-turn; used by Learning. */
 export async function generateStructuredJsonReply(
   systemInstruction: string,
   userPrompt: string,

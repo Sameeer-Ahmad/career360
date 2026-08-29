@@ -6,12 +6,7 @@ import { mapGoogleCalendarError } from "@/lib/google-calendar/http-errors";
 
 type RouteParams = { params: Promise<{ eventId: string }> };
 
-/**
- * Resolves the linked application/learning path (if any) for display in
- * the event detail dialog — ownership-scoped to the requesting user, so
- * even a tampered/foreign id in extendedProperties can never resolve to
- * (or leak the existence of) another user's data; it just comes back null.
- */
+/** Resolves the linked application/learning path (if any), ownership-scoped so a tampered/foreign id can never resolve to another user's data. */
 async function resolveLinkedEntities(userId: string, career360: { applicationId?: string; learningPathId?: string } | null) {
   const [linkedApplication, linkedLearningPath] = await Promise.all([
     career360?.applicationId

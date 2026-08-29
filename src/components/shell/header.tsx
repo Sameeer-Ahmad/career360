@@ -18,11 +18,7 @@ export function Header({
         {title}
       </h1>
 
-      {/* No room for a full search field alongside the title on narrow
-          screens, so it's hidden below md — MobileSearchTrigger provides
-          the compact equivalent (an icon that opens a full-screen overlay
-          around this exact same HeaderSearch) instead of dropping search
-          entirely on mobile. */}
+      {/* No room for a full search field below md — MobileSearchTrigger provides the compact equivalent. */}
       <div className="hidden flex-1 items-center md:flex">
         <HeaderSearch />
       </div>

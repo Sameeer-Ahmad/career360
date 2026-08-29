@@ -2,12 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUserId } from "@/lib/api-auth";
 import { createApplication, listApplications, ValidationError } from "@/lib/applications/applications";
 
-/**
- * `?q=` reuses the exact same job-title/company-name search
- * ApplicationsFilterBar already drives via listApplications — no new query
- * logic. Omitting it (existing callers, e.g. the Learning workspace's
- * application picker) keeps today's "return everything" behavior exactly.
- */
+// Omitting `?q=` keeps the "return everything" behavior existing callers
+// (e.g. the Learning workspace's application picker) rely on.
 export async function GET(request: NextRequest) {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;

@@ -1,21 +1,8 @@
 import type { SVGAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-/**
- * Career360 icon mark: a ring gapped on the right (both the top-left and
- * bottom-right arcs stay clearly visible, rounded caps on each end), with
- * a small ascending growth-graph — three points inside the ring rising to
- * a fourth, emphasized point that breaks past the ring's own outer edge
- * through that gap — career progress, breaking out.
- *
- * Solid `currentColor` throughout (no gradient) — defaults to `text-primary`
- * below, so it automatically picks up the correct per-theme emerald shade
- * the same way every other icon in the app does (contrast-checked against
- * both the light and dark page background: a fixed mid-tone gradient
- * previously dropped under 2:1 against a light background at its
- * brightest stop — solid, theme-aware color fixes that). A gradient also
- * doesn't reproduce cleanly at favicon size, the other reason to drop it.
- */
+// Solid currentColor, not a gradient — keeps per-theme contrast correct
+// and reproduces cleanly at favicon size.
 export function LogoMark({ className, ...props }: SVGAttributes<SVGSVGElement>) {
   return (
     <svg

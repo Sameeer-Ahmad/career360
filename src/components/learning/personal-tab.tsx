@@ -23,13 +23,7 @@ import {
   type SkillLevel,
 } from "@/components/learning/learning-types";
 
-// ---------------------------------------------------------------------------
-// Personal tab — a real personal workspace: create topics manually, attach
-// your own resources, take notes, track progress. Reuses the same
-// PathWorkspace (Overview/Topics/Resources/Notes) as My Learning — no
-// separate visual system for Personal.
-// ---------------------------------------------------------------------------
-
+// Reuses the same PathWorkspace as My Learning — no separate UI for Personal.
 function CreatePersonalPathForm({ onCancel, onCreated }: { onCancel: () => void; onCreated: () => void }) {
   const [title, setTitle] = useState("");
   const [topicForm, setTopicForm] = useState<PersonalTopicForm>(EMPTY_PERSONAL_TOPIC_FORM);

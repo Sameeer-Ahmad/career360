@@ -39,11 +39,7 @@ export function pathDescription(path: { source: LearningSource; applicationId: s
   return "Based on your resume and overall career profile.";
 }
 
-// ---------------------------------------------------------------------------
-// Path header — compact: title, badge, description, count, overall
-// progress. No outer card, no oversized description.
-// ---------------------------------------------------------------------------
-
+// No outer card here — kept compact so it reads as a header, not a section.
 export function PathHeader({ detail, loading }: { detail: SavedPathDetail | null; loading: boolean }) {
   if (loading || !detail) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -74,11 +70,7 @@ export function PathHeader({ detail, loading }: { detail: SavedPathDetail | null
   );
 }
 
-// ---------------------------------------------------------------------------
-// Path list row — compact, clickable, no inline expansion. Selecting a
-// path opens the full PathWorkspace.
-// ---------------------------------------------------------------------------
-
+// No inline expansion — selecting a path opens the full PathWorkspace instead.
 export function PathListRow({ path, onSelect }: { path: SavedPathListItem; onSelect: () => void }) {
   const badge = sourceBadge(path.source, path.applicationId);
 

@@ -15,12 +15,7 @@ export type ChatMessage = { role: ChatRole; content: string };
 
 const CHAT_ROLES: ChatRole[] = ["user", "assistant"];
 
-/**
- * Validates a client-supplied conversation: a non-empty array of at most
- * MAX_MESSAGES messages, each with a valid role and non-empty, in-bounds
- * content, ending with the user's new question. Throws ValidationError on
- * any invalid shape; returns the trimmed messages otherwise.
- */
+/** Validates a client-supplied conversation: bounded length, valid roles/content, ending with the user's turn. */
 export function validateMessages(input: unknown): ChatMessage[] {
   if (!Array.isArray(input) || input.length === 0) {
     throw new ValidationError("A question is required.");
@@ -88,11 +83,7 @@ function formatApplicationContextBlock(context: ApplicationContext): string {
   return `The user's application (belongs to them, verified):\n${lines.join("\n")}`;
 }
 
-/**
- * Combines the base system instruction with application context, if any.
- * Context is injected once here (rather than repeated per message) so every
- * turn in a multi-turn conversation understands it automatically.
- */
+/** Combines the base system instruction with application context, if any — injected once, not per message. */
 export function buildSystemInstruction(context?: ApplicationContext): string {
   if (!context) return CAREER_ASSISTANT_SYSTEM_INSTRUCTION;
   return `${CAREER_ASSISTANT_SYSTEM_INSTRUCTION}\n\n${formatApplicationContextBlock(context)}`;

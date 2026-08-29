@@ -8,13 +8,7 @@ export type ProductStoryStep = {
   icon: ComponentType<{ className?: string }>;
 };
 
-/**
- * The six-step product story, as a deterministic 3-column grid (2 rows of
- * 3) — the same grid pattern the "How Career360 works" section below it
- * uses for its 3 steps. A flex-wrap row of 6 fixed-width cards used to
- * leave a lone 6th card stranded alone on its own row once the container
- * ran out of width for it; a grid guarantees full, even rows instead.
- */
+// 3-column grid (2 rows) instead of flex-wrap so the row never strands a lone card.
 export function ProductStory({ steps }: { steps: ProductStoryStep[] }) {
   return (
     <div className="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6">

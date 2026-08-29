@@ -12,14 +12,7 @@ import { isValidObjectId } from "@/lib/object-id";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-/**
- * The only route that ever calls YouTube. Never destroys a good cached set
- * because a live call failed — refreshLearningResources itself returns the
- * old cache (with a warning) in that case, so a 200 here can mean either a
- * genuinely fresh set or a cache fallback; the client tells them apart via
- * the `warning` field. Only when there is truly no cache to fall back on
- * does this map to an error response.
- */
+/** The only route that ever calls YouTube. A 200 here can mean a fresh set or a cache fallback (with `warning` set) — refreshLearningResources never discards good cached data on failure. */
 export async function POST(_request: NextRequest, { params }: RouteParams) {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;

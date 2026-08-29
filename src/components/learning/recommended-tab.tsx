@@ -37,7 +37,6 @@ const GENERATE_LOADING = [
   "Building your learning path…",
 ];
 
-/** Used only for the AI-generated preview, before it's saved (no id, no progress/notes/resources yet). */
 function TopicCard({ topic }: { topic: GeneratedTopic }) {
   return (
     <div className="rounded-md border border-border px-3 py-3">
@@ -75,12 +74,6 @@ function TopicCard({ topic }: { topic: GeneratedTopic }) {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Recommended tab — two clear modes, both always visible: general growth
-// (no application required) and role-specific (an application selected,
-// either from the dropdown or preselected via ?applicationId=).
-// ---------------------------------------------------------------------------
 
 function ModeCard({
   title,

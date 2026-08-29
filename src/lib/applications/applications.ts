@@ -186,11 +186,8 @@ async function resolveCompany(input: {
   companyLocation?: string | null;
 }) {
   const name = input.companyName.trim();
-  // mode: "insensitive" is required on MongoDB — unlike MySQL, where this
-  // case-insensitive reuse behavior fell out of the database's default
-  // collation for free, Mongo's string equality is case-sensitive by
-  // default and would otherwise silently start creating a new Company for
-  // "Acme" vs "acme".
+  // MongoDB string equality is case-sensitive by default, unlike MySQL's collation —
+  // without mode: "insensitive" this would create a new Company for "Acme" vs "acme".
   const existing = await prisma.company.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
   if (existing) return existing;
 
@@ -329,15 +326,9 @@ export async function getApplication(userId: string, id: string) {
 }
 
 /**
- * Resolves a route param that may be either a raw ObjectId (old/bookmarked
- * links, or any other internal caller that already has the real id) or a
- * professional slug (<company>-<job-title>-<shortId>, see
- * application-slug.ts) into the application's actual id. The scan is
- * scoped to the requesting user's own applications, so a short id can
- * never resolve to — or leak the existence of — another user's
- * application. Throws NotFoundError uniformly, exactly like every other
- * lookup in this module (never distinguishes "no such id" from "not
- * yours" or "not a valid slug").
+ * Resolves a route param that may be a raw ObjectId or a slug (see application-slug.ts)
+ * into the real id, scoped to the requesting user so it can never resolve to — or leak
+ * the existence of — another user's application.
  */
 export async function resolveApplicationId(userId: string, idOrSlug: string): Promise<string> {
   if (isValidObjectId(idOrSlug)) return idOrSlug;
@@ -352,12 +343,8 @@ export async function resolveApplicationId(userId: string, idOrSlug: string): Pr
 }
 
 /**
- * Verifies the given application belongs to the user, without fetching the
- * full row — throws NotFoundError for both "doesn't exist" and "belongs to
- * someone else" (never distinguishes the two, so existence is never
- * leaked). Shared by any feature that needs to attach an applicationId to
- * something it owns without necessarily needing the application's data
- * (e.g. tagging a Document, or scoping a LearningPath).
+ * Verifies the given application belongs to the user without fetching the full row —
+ * throws NotFoundError for both "doesn't exist" and "belongs to someone else".
  */
 export async function assertApplicationOwnership(userId: string, applicationId: string): Promise<void> {
   const application = await prisma.application.findFirst({
@@ -408,12 +395,8 @@ export async function deleteApplication(userId: string, id: string) {
   const existing = await prisma.application.findFirst({ where: { id, userId } });
   if (!existing) throw new NotFoundError();
 
-  // Defensive, explicit SetNull: MongoDB's Prisma connector DOES emulate
-  // Document.application's onDelete: SetNull automatically (verified during
-  // the migration's referential-action tests), but this is done explicitly
-  // anyway as a documented safety net rather than relying solely on that
-  // emulation — matches the same defensive pattern deleteDocument() below
-  // uses for the two relations that are NOT auto-emulated.
+  // Explicit SetNull safety net — MongoDB's Prisma connector emulates
+  // Document.application's onDelete: SetNull, but this doesn't rely on that alone.
   await prisma.document.updateMany({ where: { applicationId: id }, data: { applicationId: null } });
   await prisma.application.delete({ where: { id } });
 }

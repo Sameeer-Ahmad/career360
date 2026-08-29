@@ -1,15 +1,5 @@
-/**
- * Deterministic, heuristic resume-readiness scoring. No AI is involved here
- * by design — this module intentionally does NOT claim to reproduce any
- * specific company's real ATS system, only well-known resume-readiness
- * signals (section presence, bullet structure, quantified results, contact
- * info, length) that commonly affect both human readability and ATS parsing.
- * "ATS readiness" is Career360's own transparent estimate, not a guarantee.
- *
- * Every category explains itself: what was detected in THIS resume, why the
- * signal matters, and a concrete recommendation grounded in what was
- * actually found — never generic filler unrelated to the resume's content.
- */
+// Deterministic, heuristic resume-readiness scoring — no AI involved. "ATS readiness" is Career360's own
+// transparent estimate based on well-known signals (sections, bullets, metrics, contact info, length), not a guarantee of any real ATS.
 
 export type ReadinessPriority = "HIGH" | "MEDIUM" | "LOW";
 
@@ -139,11 +129,8 @@ function scoreLength(content: string): CategoryDetail {
   };
 }
 
-// Plain-text bullet markers, numbered lists, and the two common LaTeX resume
-// bullet forms (\resumeItem{...} from popular resume templates, and raw
-// \item). Deliberately narrow — an arbitrary LaTeX command (\resumeSubheading,
-// \section, etc.) must NOT be counted as a bullet just because it starts a
-// line.
+// Plain-text bullet markers, numbered lists, and LaTeX \resumeItem{/\item — deliberately narrow so an
+// arbitrary LaTeX command (\resumeSubheading, \section, etc.) isn't counted as a bullet.
 const BULLET_LINE = /^[-•*▪◦]|^\d+[.)]\s|^\\resumeItem\{|^\\item\b/;
 
 function scoreBulletStructure(content: string): CategoryDetail {
@@ -309,11 +296,8 @@ export function scoreResumeStructure(content: string): ResumeStructureScore {
   return { overallScore, categories };
 }
 
-// ---------------------------------------------------------------------------
-// JD-match score — combines the Career360-computed structure score above
-// with Gemini-classified evidence (matched/weak/missing per requirement).
+// JD-match score — combines the structure score above with Gemini-classified evidence per requirement.
 // Gemini never produces the final number; this module does.
-// ---------------------------------------------------------------------------
 
 export const RELEVANCE_LEVELS = ["STRONG", "MODERATE", "WEAK"] as const;
 export type RelevanceLevel = (typeof RELEVANCE_LEVELS)[number];

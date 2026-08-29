@@ -12,7 +12,7 @@ export function ApplicationRowActions({
   label,
 }: {
   applicationId: string;
-  /** Application detail destination — the professional slug URL, same destination the company-name link uses. Defaults to the raw id route if omitted. */
+  /** Application detail destination; defaults to the raw id route if omitted. */
   href?: string;
   label: string;
 }) {

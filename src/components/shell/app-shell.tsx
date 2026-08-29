@@ -2,12 +2,7 @@ import type { ReactNode } from "react";
 import { Sidebar } from "@/components/shell/sidebar";
 import { MobileNavProvider, MobileNavDrawer } from "@/components/shell/mobile-nav";
 import { ToastProvider } from "@/components/ui/toast";
-
-type ShellUser = {
-  name?: string | null;
-  email?: string | null;
-  avatarUrl?: string | null;
-};
+import type { ShellUser } from "@/components/shell/user-profile";
 
 export function AppShell({ user, children }: { user: ShellUser; children: ReactNode }) {
   return (

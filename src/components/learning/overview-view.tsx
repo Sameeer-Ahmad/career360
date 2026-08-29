@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { LevelArrow, PROGRESS_LABELS } from "@/components/learning/learning-shared";
 import type { ResourcesByTopic, SavedPathDetail } from "@/components/learning/learning-types";
 
-// ---------------------------------------------------------------------------
-// Overview — "What should I focus on?" Concise: priority areas, a single
-// continue-learning suggestion, and a resource summary. Never duplicates
-// every topic/resource — those live in their own workspace views.
-// ---------------------------------------------------------------------------
-
+// Deliberately doesn't list every topic/resource — those live in their own tabs.
 export function OverviewView({
   detail,
   resourcesByTopic,

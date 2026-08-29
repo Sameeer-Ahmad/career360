@@ -1,18 +1,13 @@
-// Powers the Dashboard's "Upcoming" section — a small, chronological slice
-// of the user's own Career360-created Calendar events (Interview,
-// Follow-up, Learning Session only), reusing the existing Google Calendar
-// read path (listEventsInRange) rather than a new local model. Split into
-// a pure selection/shaping core (independently testable, no I/O) and a
-// thin async orchestrator that does the Calendar fetch + the
-// Application/LearningPath joins — the same "pure core, route-layer join"
-// split events.ts's own API routes already use for resolveLinkedEntities.
+// Powers the Dashboard's "Upcoming" section: the next few Interview /
+// Follow-up / Learning Session events, reusing the existing Google
+// Calendar read path rather than a new local model.
 import { prisma } from "@/lib/prisma";
 import { listEventsInRange, type CalendarEventSummary } from "@/lib/google-calendar/events";
 import { CALENDAR_EVENT_TYPE_LABELS, type CalendarEventType } from "@/lib/google-calendar/mapping";
 import { calendarEventHref, formatEventWhen } from "@/lib/google-calendar/calendar-date";
 import { buildApplicationSlug } from "@/lib/applications/application-slug";
 
-/** The only event types the Dashboard ever surfaces — never an arbitrary Google Calendar event, and never APPLICATION_DEADLINE (no deadline field/UI exists yet). */
+// Excludes APPLICATION_DEADLINE — no deadline field/UI exists yet.
 const NEXT_ACTION_EVENT_TYPES = new Set<CalendarEventType>(["INTERVIEW", "FOLLOW_UP", "LEARNING_SESSION"]);
 
 const DEFAULT_LIMIT = 5;
@@ -22,22 +17,16 @@ export type NextActionItem = {
   id: string;
   eventType: CalendarEventType;
   eventTypeLabel: string;
-  /** The linked application/learning-path context when available (e.g. "Acamae · SDE 1"), falling back to the raw event title when there's no linked context to derive a cleaner line from. */
+  /** Linked application/learning-path context when available, else the raw event title. */
   displayTitle: string;
   start: string;
   whenLabel: string;
-  /** Present only for an application-linked event whose application still resolves (owned, not deleted). */
   applicationHref: string | null;
-  /** Present only for a learning-related event. */
   learningHref: string | null;
   calendarHref: string;
 };
 
-/**
- * Pure: filters to the relevant, still-upcoming Career360 event types and
- * returns them nearest-first. No ranking beyond "soonest" — the Dashboard
- * intentionally doesn't build a recommendation system.
- */
+// Filters to relevant, still-upcoming event types, nearest-first.
 export function selectUpcomingCareerEvents(
   events: CalendarEventSummary[],
   now: Date,
@@ -53,7 +42,7 @@ export function selectUpcomingCareerEvents(
 type ApplicationContext = { id: string; jobTitle: string; company: { name: string } };
 type LearningPathContext = { id: string; title: string; applicationId: string | null };
 
-/** Pure: turns already-selected events (plus their already-fetched linked context) into display-ready items. No I/O — takes lookup maps rather than querying itself, so this is testable without a database. */
+// Takes lookup maps rather than querying itself, so this stays pure/testable.
 export function buildNextActionItems(
   events: CalendarEventSummary[],
   applicationById: Map<string, ApplicationContext>,
@@ -99,14 +88,8 @@ export function buildNextActionItems(
     });
 }
 
-/**
- * One Calendar API call (bounded date window, never a poll) plus one
- * batched Application query and one batched LearningPath query — never
- * N+1, never a separate Google Calendar call per event. Returns an empty
- * list rather than throwing on a transient Calendar failure or a
- * not-connected account, so the Dashboard just shows its empty state
- * instead of breaking the page.
- */
+// Batches the Application/LearningPath lookups (no N+1) and returns an
+// empty list on a Calendar failure so the Dashboard just shows its empty state.
 export async function getNextActions(
   userId: string,
   options: { limit?: number; windowDays?: number } = {},
