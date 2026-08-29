@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { EMPLOYMENT_TYPE_LABELS, PRIORITY_LABELS, STATUS_LABELS, toDateInputValue } from "@/lib/format";
 import { AlertCircle } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 const STATUSES = Object.keys(STATUS_LABELS) as ApplicationStatus[];
 const PRIORITIES = Object.keys(PRIORITY_LABELS) as Priority[];
@@ -110,6 +111,7 @@ export function ApplicationForm({
   initialValues?: ApplicationFormInitialValues;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [values, setValues] = useState<FormValues>(() => toFormValues(initialValues));
   const [issues, setIssues] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -141,20 +143,23 @@ export function ApplicationForm({
 
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        setIssues(
+        const messages: string[] =
           body?.issues && Array.isArray(body.issues)
             ? body.issues
-            : [body?.error ?? "Something went wrong. Please try again."],
-        );
+            : [body?.error ?? "Something went wrong. Please try again."];
+        setIssues(messages);
+        toast.error(messages[0]);
         setSubmitting(false);
         return;
       }
 
       const application = await response.json();
+      toast.success(mode === "create" ? "Application created" : "Application updated");
       router.push(`/applications/${application.id}`);
       router.refresh();
     } catch {
       setIssues(["Network error — please check your connection and try again."]);
+      toast.error("Network error — please check your connection and try again.");
       setSubmitting(false);
     }
   }

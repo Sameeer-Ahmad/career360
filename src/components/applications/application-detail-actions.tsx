@@ -10,7 +10,7 @@ export function ApplicationDetailActions({
   applicationId,
   label,
 }: {
-  applicationId: number;
+  applicationId: string;
   label: string;
 }) {
   const router = useRouter();
