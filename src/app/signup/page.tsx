@@ -3,10 +3,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { GoogleSignInButton } from "@/components/auth/google-signin-button";
-import { LoginForm } from "@/components/auth/login-form";
+import { SignupForm } from "@/components/auth/signup-form";
 import { Divider } from "@/components/ui/divider";
 
-export default async function LoginPage() {
+export default async function SignupPage() {
   const session = await auth();
   if (session?.user) {
     redirect("/dashboard");
@@ -14,14 +14,14 @@ export default async function LoginPage() {
 
   return (
     <AuthShell
-      title="Welcome back"
-      description="Sign in to continue to your career workspace."
+      title="Create your account"
+      description="Start building your complete job-search workspace."
       showBackLink
       footer={
         <>
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-medium text-primary hover:underline">
-            Create account
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-primary hover:underline">
+            Sign in
           </Link>
         </>
       }
@@ -35,7 +35,7 @@ export default async function LoginPage() {
           <Divider className="flex-1" />
         </div>
 
-        <LoginForm />
+        <SignupForm />
       </div>
     </AuthShell>
   );
