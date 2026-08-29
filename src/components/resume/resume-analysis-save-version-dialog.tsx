@@ -5,11 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog } from "@/components/ui/dialog";
 import { MAX_TITLE_LENGTH } from "@/lib/documents/document-limits";
 
-/**
- * Mounted only while the dialog is open (see the parent's conditional
- * children below), so `title` naturally initializes fresh from
- * `defaultTitle` every time it opens — no effect-based reset needed.
- */
+// Mounted only while open, so `title` resets fresh from defaultTitle each time — no effect needed.
 function SaveVersionDialogFields({
   defaultTitle,
   saving,

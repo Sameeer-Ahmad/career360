@@ -9,13 +9,8 @@ const NOTE_DEBOUNCE_MS = 1800;
 type NoteSaveState = "idle" | "saving" | "saved" | "error";
 
 export function TopicNotesSection({ topicId }: { topicId: string }) {
-  // A fresh TopicNotesSection instance exists per topic (each topic row
-  // owns its own subtree), so this only ever fetches once per mount —
-  // "loading" starts true rather than being set synchronously in the
-  // effect below, matching this file's established effect pattern.
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
   const [content, setContent] = useState("");
   const [saveState, setSaveState] = useState<NoteSaveState>("idle");
 
@@ -36,7 +31,6 @@ export function TopicNotesSection({ topicId }: { topicId: string }) {
         const noteContent = body?.note?.content ?? "";
         setContent(noteContent);
         lastSavedRef.current = noteContent;
-        setLoaded(true);
       })
       .catch((error: Error) => {
         if (!cancelled) setLoadError(error.message || "Network error — please check your connection and try again.");
@@ -91,7 +85,6 @@ export function TopicNotesSection({ topicId }: { topicId: string }) {
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading notes…</p>;
   if (loadError) return <p className="text-sm text-status-rejected-fg">{loadError}</p>;
-  if (!loaded) return null;
 
   return (
     <div className="space-y-1.5">

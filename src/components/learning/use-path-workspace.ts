@@ -3,6 +3,7 @@ import { useToast } from "@/components/ui/toast";
 import type {
   PathNoteRow,
   PersonalTopicForm,
+  ProgressSummary,
   Resource,
   ResourceFormState,
   ResourcesByTopic,
@@ -11,6 +12,12 @@ import type {
   TopicProgressData,
   WorkspaceTab,
 } from "@/components/learning/learning-types";
+
+function summarizeProgress(topics: { progress: TopicProgressData | null }[]): ProgressSummary {
+  const total = topics.length;
+  const completed = topics.filter((t) => t.progress?.status === "COMPLETED").length;
+  return { completed, total, percentage: total === 0 ? 0 : Math.round((completed / total) * 100) };
+}
 
 export function usePathWorkspace({ pathId, onBack, onDeleted }: { pathId: string; onBack: () => void; onDeleted: () => void }) {
   const toast = useToast();
@@ -83,10 +90,6 @@ export function usePathWorkspace({ pathId, onBack, onDeleted }: { pathId: string
       .finally(() => setNotesLoading(false));
   }
 
-  // A fresh PathWorkspace instance is mounted per selected path (the list
-  // view unmounts it when going back), so this only ever runs once per
-  // mount — no synchronous setState needed here beyond the plain state
-  // resets below, matching this file's established effect pattern.
   useEffect(() => {
     loadDetail();
     loadResources();
@@ -107,10 +110,7 @@ export function usePathWorkspace({ pathId, onBack, onDeleted }: { pathId: string
     setDetail((prev) => {
       if (!prev) return prev;
       const topics = prev.topics.map((t) => (t.id === topicId ? { ...t, progress } : t));
-      const total = topics.length;
-      const completed = topics.filter((t) => t.progress?.status === "COMPLETED").length;
-      const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
-      return { ...prev, topics, progressSummary: { completed, total, percentage } };
+      return { ...prev, topics, progressSummary: summarizeProgress(topics) };
     });
   }
 
@@ -134,13 +134,7 @@ export function usePathWorkspace({ pathId, onBack, onDeleted }: { pathId: string
       setDetail((prev) => {
         if (!prev) return prev;
         const topics = [...prev.topics, newTopic];
-        const total = topics.length;
-        const completed = topics.filter((t) => t.progress?.status === "COMPLETED").length;
-        return {
-          ...prev,
-          topics,
-          progressSummary: { completed, total, percentage: total === 0 ? 0 : Math.round((completed / total) * 100) },
-        };
+        return { ...prev, topics, progressSummary: summarizeProgress(topics) };
       });
       setResourcesByTopic((prev) => ({ ...(prev ?? {}), [newTopic.id]: { resources: [], fetchedAt: null, stale: false } }));
       return null;

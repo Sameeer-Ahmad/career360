@@ -34,9 +34,7 @@ export function useResumeAnalysis({
 }) {
   const toast = useToast();
 
-  // Local copy so a newly-created tailored version can be added to the
-  // dropdown immediately after saving, without a server round-trip that
-  // would otherwise reset all the in-progress analysis/comparison state.
+  // Local copy so a newly-saved tailored version can be added to the dropdown without a refetch that would reset in-progress state.
   const [localResumes, setLocalResumes] = useState<ResumeOption[]>(resumes);
 
   const [documentId, setDocumentId] = useState<string | "">(
@@ -74,29 +72,18 @@ export function useResumeAnalysis({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [updatingInPlace, setUpdatingInPlace] = useState(false);
 
-  // Set right before an automatic post-save re-analysis, so the comparison
-  // card can show what changed. A single, explicit, user-triggered snapshot
-  // — never an automatic loop.
+  // Snapshot taken right before an automatic post-save re-analysis, so the comparison card can show what changed.
   const [beforeMatch, setBeforeMatch] = useState<ResumeJdMatch | null>(null);
   const [appliedTitles, setAppliedTitles] = useState<string[]>([]);
 
-  // Bounded, best-result-preserving tailoring session — everything since the
-  // last fresh Analyze click (see handleManualAnalyze, which always resets
-  // this via startNewSession()). The actual round-capping / best-score /
-  // early-completion decisions live in src/lib/tailoring-session.ts (pure,
-  // unit-tested) — this component only wires that state through to fetch
-  // calls and UI.
+  // Round-capping/best-score/completion logic lives in tailoring-session.ts (pure) — this hook just wires it to fetch calls and UI.
   const [session, setSession] = useState<TailoringSessionState>(INITIAL_TAILORING_SESSION);
   const [restoringBest, setRestoringBest] = useState(false);
 
   const selectedResume = localResumes.find((r) => r.id === documentId);
 
-  // Fetch the selected resume's full content client-side — needed to build a
-  // tailored draft locally (accepted suggestions are applied via plain text
-  // replacement, not another AI call) and to save it.
+  // Fetched client-side because accepted suggestions are applied to it via plain text replacement, not another AI call.
   useEffect(() => {
-    // documentId is only "" when there are no resumes at all, in which case
-    // the component returns its empty state below and this fetch is moot.
     if (documentId === "") return;
     let cancelled = false;
     fetch(`/api/documents/${documentId}`)
@@ -112,14 +99,8 @@ export function useResumeAnalysis({
     };
   }, [documentId]);
 
-  // Preview the selected application's JD client-side (display only — the
-  // analyze request always sends applicationId, never this fetched text, so
-  // the server's stored JD stays authoritative regardless of what's shown
-  // here).
+  // Display-only preview — the analyze request always sends applicationId, so the server's stored JD stays authoritative.
   useEffect(() => {
-    // Nothing to fetch when there's no in-page application selection — the
-    // derivation of activeApplicationPreview below ignores stale preview
-    // state whenever these conditions aren't met, so no reset is needed here.
     if (jdSource !== "application" || selectedApplicationId === "") return;
     let cancelled = false;
     fetch(`/api/applications/${selectedApplicationId}`)
@@ -158,22 +139,8 @@ export function useResumeAnalysis({
 
   const suggestions = result?.mode === "match" ? result.match.suggestions : [];
 
-  // Accepts an explicit target id so a post-save re-analysis can run against
-  // the just-created/updated document immediately, without waiting for
-  // `documentId` state to propagate through a render — no effect required.
-  //
-  // `isNewSession: true` (only from handleManualAnalyze, the top Analyze/
-  // Re-analyze button) always starts a fresh, comprehensive first pass and
-  // resets the whole tailoring session (round count, best score/draft,
-  // applied/rejected history). Every other caller (the automatic post-save
-  // re-analysis) continues the current session as the next refinement round,
-  // and is a no-op once the 3-round budget is spent — see canStartNextAnalysis.
-  //
-  // `content` is the resume text this analysis actually corresponds to
-  // (explicitly known by save/update callers at the moment they call this,
-  // since `sourceContent` state may not have refetched yet) — used to track
-  // the best-scoring draft's actual text, not just its document id, so it
-  // survives even if a later round overwrites that same document in place.
+  // targetDocumentId lets a post-save re-analysis target the just-saved document without waiting for documentId to propagate.
+  // isNewSession resets the whole tailoring session for a fresh pass; otherwise this continues the current round (capped at 3, see canStartNextAnalysis).
   async function analyze(
     targetDocumentId: string | "" = documentId,
     options: { content?: string; isNewSession?: boolean } = {},
@@ -263,9 +230,6 @@ export function useResumeAnalysis({
     }
   }
 
-  // Used by the top Analyze/Re-analyze button — always starts a brand-new
-  // tailoring session (see analyze()'s isNewSession handling), and clears
-  // any stale before/after comparison from a previous session.
   function handleManualAnalyze() {
     setBeforeMatch(null);
     setAppliedTitles([]);
@@ -297,26 +261,21 @@ export function useResumeAnalysis({
     updateSuggestion(id, { text }, text);
   }
 
-  // The draft is built deterministically from the source content by applying
-  // accepted suggestions — no AI call, fully transparent, and easy for the
-  // user to verify before saving. BULLET suggestions rewrite existing text
-  // in place; MASTER_CONTENT suggestions append verified Master Resume
-  // content rather than replacing anything (there's nothing to replace).
-  const draftContent = (() => {
-    if (!sourceContent) return "";
-    let content = sourceContent;
+  // Built deterministically, no AI call: BULLET suggestions rewrite text in place, MASTER_CONTENT suggestions append.
+  let draftContent = sourceContent ?? "";
+  if (sourceContent) {
     const appended: string[] = [];
     for (const suggestion of suggestions) {
       const state = suggestionStates[suggestion.id];
       if (state?.status !== "accepted") continue;
       if (suggestion.type === "BULLET" && suggestion.current) {
-        content = content.split(suggestion.current).join(state.text);
+        draftContent = draftContent.split(suggestion.current).join(state.text);
       } else if (suggestion.type === "MASTER_CONTENT" && suggestion.masterExcerpt) {
         appended.push(state.text);
       }
     }
-    return appended.length > 0 ? `${content}\n\n${appended.join("\n\n")}` : content;
-  })();
+    if (appended.length > 0) draftContent = `${draftContent}\n\n${appended.join("\n\n")}`;
+  }
 
   const acceptedSuggestionTitles = suggestions
     .filter((s) => suggestionStates[s.id]?.status === "accepted")
@@ -421,10 +380,7 @@ export function useResumeAnalysis({
     // this just clears the comparison banner so the user can keep working.
   }
 
-  // A pure recovery action — restores the best-scoring draft's text onto the
-  // CURRENT tailored document, without consuming a round or calling Gemini.
-  // Only ever targets an already-tailored document (never Main/Master),
-  // matching the same gating "Update This Version" uses.
+  // Restores the best-scoring draft's text onto the current tailored document without consuming a round or calling Gemini.
   async function handleRestoreBest() {
     const bestDraftContent = session.bestDraftContent;
     if (!bestDraftContent || documentId === "" || !selectedResume?.isTailored || restoringBest) return;
