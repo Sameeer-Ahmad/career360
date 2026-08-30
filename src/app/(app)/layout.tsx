@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/account/current-user";
 import { AppShell } from "@/components/shell/app-shell";
 
 export default async function AuthenticatedLayout({ children }: { children: ReactNode }) {
-  const session = await auth();
+  const user = await getCurrentUser();
 
-  if (!session?.user) {
+  if (!user) {
     redirect("/login");
   }
 
-  return <AppShell user={session.user}>{children}</AppShell>;
+  return <AppShell user={user}>{children}</AppShell>;
 }

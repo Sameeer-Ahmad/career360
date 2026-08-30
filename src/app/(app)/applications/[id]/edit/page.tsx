@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getApplication, NotFoundError } from "@/lib/applications";
+import { getApplication, NotFoundError } from "@/lib/applications/applications";
+import { isValidObjectId } from "@/lib/object-id";
 import { Header } from "@/components/shell/header";
 import { ApplicationForm } from "@/components/applications/application-form";
 
@@ -15,14 +16,14 @@ export default async function EditApplicationPage({
   }
 
   const { id: idParam } = await params;
-  const id = Number(idParam);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!isValidObjectId(idParam)) {
     notFound();
   }
+  const id = idParam;
 
   let application;
   try {
-    application = await getApplication(Number(session.user.id), id);
+    application = await getApplication(session.user.id, id);
   } catch (error) {
     if (error instanceof NotFoundError) {
       notFound();
@@ -55,6 +56,7 @@ export default async function EditApplicationPage({
               status: application.status,
               priority: application.priority,
               jobDescription: application.jobDescription,
+              interviewAt: application.interviewAt,
             }}
           />
         </div>

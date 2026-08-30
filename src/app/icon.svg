@@ -1,13 +1,12 @@
 <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="career360Mark" x1="10" y1="110" x2="110" y2="10" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#3B82F6" />
-      <stop offset="0.5" stop-color="#6366F1" />
-      <stop offset="1" stop-color="#7C3AED" />
-    </linearGradient>
-  </defs>
-  <path d="M 97.86,67.31 A 38,38 0 1,1 76.06,29.56" stroke="url(#career360Mark)" stroke-width="15" stroke-linecap="round" />
-  <path d="M 66,90 L 89,31" stroke="url(#career360Mark)" stroke-width="11" stroke-linecap="round" />
-  <polygon points="0,-13 8,9 -8,9" fill="url(#career360Mark)" transform="translate(93,25) rotate(24)" />
-  <circle cx="100" cy="14" r="5.5" fill="url(#career360Mark)" />
+  <!-- Same geometry as src/components/brand/logo-mark.tsx. Solid color here
+       (not currentColor) because a favicon renders standalone in the
+       browser chrome, outside the page's DOM/theme system — #0F9F78 is
+       contrast-checked to hold up against both light and dark tab bars. -->
+  <path d="M 79.5,32.15 A 34,34 0 1 0 79.5,87.85" stroke="#0F9F78" stroke-width="13" stroke-linecap="round" />
+  <polyline points="50,74 62,62 74,64 92,40" stroke="#0F9F78" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="50" cy="74" r="4" fill="#0F9F78" />
+  <circle cx="62" cy="62" r="5.5" fill="#0F9F78" />
+  <circle cx="74" cy="64" r="6.5" fill="#0F9F78" />
+  <circle cx="92" cy="40" r="9" fill="#0F9F78" />
 </svg>

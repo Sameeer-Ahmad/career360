@@ -31,7 +31,11 @@ export function DropdownMenu({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!open) return;
 
-    function handlePointerDown(event: MouseEvent) {
+    // pointerdown (not mousedown) — fires uniformly for mouse, touch, and
+    // pen, so outside-tap detection is just as reliable on mobile as on
+    // desktop. Still fires before the item's own click, so an item tap
+    // never gets closed out from under itself (see the "inside" check).
+    function handlePointerDown(event: PointerEvent) {
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
     }
 
@@ -39,10 +43,10 @@ export function DropdownMenu({ children }: { children: ReactNode }) {
       if (event.key === "Escape") setOpen(false);
     }
 
-    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
@@ -93,7 +97,7 @@ export function DropdownMenuContent({
     <div
       role="menu"
       className={cn(
-        "absolute z-50 mt-1.5 min-w-40 rounded-md border border-border bg-card p-1 text-card-foreground shadow-popover",
+        "absolute z-50 mt-2 flex min-w-40 flex-col gap-0.5 rounded-md border border-border bg-card p-1.5 text-card-foreground shadow-popover",
         align === "end" ? "right-0" : "left-0",
         className,
       )}
@@ -117,7 +121,7 @@ export function DropdownMenuItem({
       role="menuitem"
       className={cn(
         "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors",
-        "hover:bg-muted focus-visible:bg-muted focus-visible:outline-none",
+        "hover:bg-muted focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
         className,
       )}
       onClick={(event) => {
