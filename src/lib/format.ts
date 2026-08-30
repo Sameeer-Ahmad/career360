@@ -1,4 +1,4 @@
-import type { ApplicationStatus, EmploymentType, Priority, ResumeRole } from "@prisma/client";
+import type { ApplicationStatus, DocumentContentFormat, DocumentType, EmploymentType, Priority, ResumeRole } from "@prisma/client";
 
 export type BadgeVariant = "neutral" | "primary" | "success" | "warning" | "destructive" | "info";
 
@@ -24,6 +24,17 @@ export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   CONTRACT: "Contract",
   INTERNSHIP: "Internship",
   FREELANCE: "Freelance",
+};
+
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  RESUME: "Resume",
+  COVER_LETTER: "Cover Letter",
+  OTHER: "Other",
+};
+
+export const DOCUMENT_CONTENT_FORMAT_LABELS: Record<DocumentContentFormat, string> = {
+  PLAIN: "Plain text",
+  LATEX: "LaTeX source",
 };
 
 export const RESUME_ROLE_LABELS: Record<ResumeRole, string> = {

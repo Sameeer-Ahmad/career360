@@ -395,5 +395,12 @@ export async function deleteApplication(userId: string, id: string) {
   const existing = await prisma.application.findFirst({ where: { id, userId } });
   if (!existing) throw new NotFoundError();
 
+  // Defensive, explicit SetNull: MongoDB's Prisma connector DOES emulate
+  // Document.application's onDelete: SetNull automatically (verified during
+  // the migration's referential-action tests), but this is done explicitly
+  // anyway as a documented safety net rather than relying solely on that
+  // emulation — matches the same defensive pattern deleteDocument() below
+  // uses for the two relations that are NOT auto-emulated.
+  await prisma.document.updateMany({ where: { applicationId: id }, data: { applicationId: null } });
   await prisma.application.delete({ where: { id } });
 }
