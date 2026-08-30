@@ -1,49 +1,302 @@
+@import "tailwindcss";
+
+/* Manual dark mode: toggled via a `.dark` class on <html>, not just OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core surfaces — true neutral (no blue/purple cast). Background is a
+     hair off pure white so `--card` (still pure white) visibly elevates
+     above it — the same "surface lighter than page" relationship dark
+     mode already has, just inverted (mirrors GitHub/Linear-style light
+     themes rather than a flat, undifferentiated white-on-white page).
+     Contrast-verified with a WCAG script: muted-foreground still clears
+     4.5:1 against every surface below. */
+  --background: #fafafb;
+  --foreground: #17171a;
+  --card: #ffffff;
+  --card-foreground: #17171a;
+  --muted: #f2f2f4;
+  --muted-foreground: #6b6b70;
+  --border: #e2e2e6;
+  --input: #f6f6f7;
+  --ring: #0f9f78;
+
+  /* Brand / semantic — emerald primary. #0F9F78 fails AA with white text
+     (3.36:1) but passes at 4.62:1 with the dark-accent foreground below —
+     verified with a WCAG contrast script, not eyeballed. Hover darkens to
+     #0B8062, which in turn fails AA with dark text (max 4.28:1) but passes
+     with white (4.91:1) — so hover swaps the button's text color too,
+     animated by the existing `transition-colors` on Button/IconButton. */
+  --primary: #0f9f78;
+  --primary-foreground: #0a2922;
+  --primary-hover: #0b8062;
+  --primary-hover-foreground: #ffffff;
+  --secondary: #f2f2f4;
+  --secondary-foreground: #17171a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --info: #0284c7;
+  --info-foreground: #ffffff;
+
+  /* Sidebar */
+  --sidebar: #fafafb;
+  --sidebar-foreground: #17171a;
+  --sidebar-border: #e2e2e6;
+  --sidebar-active-bg: #e1f5ee;
+  --sidebar-active-foreground: #0b8062;
+
+  /* Status badges (soft tint bg + saturated fg). Wishlist/Screening/
+     Interview/Offer/Accepted/Rejected are unchanged — their hues already
+     read clearly and distinctly against the emerald primary. Applied
+     moves from indigo to blue, since indigo was specifically the
+     brand-identity color being retired and Applied has no fixed semantic
+     hue to preserve. */
+  --status-wishlist-bg: #f4f4f6;
+  --status-wishlist-fg: #52525b;
+  --status-applied-bg: #dbeafe;
+  --status-applied-fg: #1d4ed8;
+  --status-screening-bg: #fef3c7;
+  --status-screening-fg: #92400e;
+  --status-interview-bg: #f3e8ff;
+  --status-interview-fg: #7e22ce;
+  --status-offer-bg: #dcfce7;
+  --status-offer-fg: #15803d;
+  --status-accepted-bg: #d1fae5;
+  --status-accepted-fg: #047857;
+  --status-rejected-bg: #fee2e2;
+  --status-rejected-fg: #b91c1c;
+
+  /* Priority badges */
+  --priority-low-bg: #f4f4f6;
+  --priority-low-fg: #52525b;
+  --priority-medium-bg: #fef3c7;
+  --priority-medium-fg: #92400e;
+  --priority-high-bg: #fee2e2;
+  --priority-high-fg: #b91c1c;
+
+  /* Shape / elevation */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 4px 0 rgb(0 0 0 / 0.08);
+  --shadow-popover: 0 4px 8px -1px rgb(0 0 0 / 0.1), 0 8px 28px -4px rgb(0 0 0 / 0.14);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  /* Refined charcoal/near-black — true neutral (no blue/purple cast). */
+  --background: #0a0a0b;
+  --foreground: #f2f2f2;
+  --card: #121213;
+  --card-foreground: #f2f2f2;
+  --muted: #1b1b1c;
+  --muted-foreground: #9a9a9d;
+  --border: #29292b;
+  --input: #121213;
+  --ring: #34d399;
+
+  /* Bright emerald accent — passes AA with the dark-accent foreground at
+     8.07:1 (verified). Hover deepens to the light-mode primary shade,
+     which still passes at 4.62:1 with the same dark text, so — unlike the
+     light-mode hover — no text-color swap is needed here. */
+  --primary: #34d399;
+  --primary-foreground: #0a2922;
+  --primary-hover: #0f9f78;
+  --primary-hover-foreground: #0a2922;
+  --secondary: #1b1b1c;
+  --secondary-foreground: #f2f2f2;
+  --destructive: #f87171;
+  --destructive-foreground: #0a0a0b;
+  --success: #4ade80;
+  --success-foreground: #0a0a0b;
+  --warning: #fbbf24;
+  --warning-foreground: #0a0a0b;
+  --info: #38bdf8;
+  --info-foreground: #0a0a0b;
+
+  --sidebar: #0d0d0e;
+  --sidebar-foreground: #f2f2f2;
+  --sidebar-border: #232325;
+  --sidebar-active-bg: #123b31;
+  --sidebar-active-foreground: #34d399;
+
+  --status-wishlist-bg: #1c1c22;
+  --status-wishlist-fg: #d4d4d8;
+  --status-applied-bg: #1e2f5c;
+  --status-applied-fg: #93c5fd;
+  --status-screening-bg: #45330a;
+  --status-screening-fg: #fcd34d;
+  --status-interview-bg: #3b1664;
+  --status-interview-fg: #d8b4fe;
+  --status-offer-bg: #0f3d24;
+  --status-offer-fg: #86efac;
+  --status-accepted-bg: #08402f;
+  --status-accepted-fg: #6ee7b7;
+  --status-rejected-bg: #450a0a;
+  --status-rejected-fg: #fca5a5;
+
+  --priority-low-bg: #1c1c22;
+  --priority-low-fg: #d4d4d8;
+  --priority-medium-bg: #45330a;
+  --priority-medium-fg: #fcd34d;
+  --priority-high-bg: #450a0a;
+  --priority-high-fg: #fca5a5;
+
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.2), 0 1px 3px 0 rgb(0 0 0 / 0.3);
+  --shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 8px 24px -4px rgb(0 0 0 / 0.4);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-hover-foreground: var(--primary-hover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-active-bg: var(--sidebar-active-bg);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+
+  --color-status-wishlist-bg: var(--status-wishlist-bg);
+  --color-status-wishlist-fg: var(--status-wishlist-fg);
+  --color-status-applied-bg: var(--status-applied-bg);
+  --color-status-applied-fg: var(--status-applied-fg);
+  --color-status-screening-bg: var(--status-screening-bg);
+  --color-status-screening-fg: var(--status-screening-fg);
+  --color-status-interview-bg: var(--status-interview-bg);
+  --color-status-interview-fg: var(--status-interview-fg);
+  --color-status-offer-bg: var(--status-offer-bg);
+  --color-status-offer-fg: var(--status-offer-fg);
+  --color-status-accepted-bg: var(--status-accepted-bg);
+  --color-status-accepted-fg: var(--status-accepted-fg);
+  --color-status-rejected-bg: var(--status-rejected-bg);
+  --color-status-rejected-fg: var(--status-rejected-fg);
+
+  --color-priority-low-bg: var(--priority-low-bg);
+  --color-priority-low-fg: var(--priority-low-fg);
+  --color-priority-medium-bg: var(--priority-medium-bg);
+  --color-priority-medium-fg: var(--priority-medium-fg);
+  --color-priority-high-bg: var(--priority-high-bg);
+  --color-priority-high-fg: var(--priority-high-fg);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --shadow-card: var(--shadow-card);
+  --shadow-popover: var(--shadow-popover);
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", ui-serif, serif;
 }
 
 html {
   height: 100%;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
 }
 
 body {
   min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--foreground);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
-  margin: 0;
 }
 
-a {
+/* In @layer base (not bare CSS) so it loses to Tailwind's utility-layer
+   text-color classes — bare CSS in Tailwind v4 outranks every layer
+   regardless of specificity, which was silently overriding buttonVariants'
+   text-primary-foreground on every <Link>-based button (e.g. "Add
+   Application"), leaving near-invisible text on the primary button color. */
+@layer base {
+  a {
+    color: inherit;
+  }
+}
+
+/* Editorial accent for a short word/phrase inside a landing-page headline —
+   sits inline with the surrounding Manrope heading, inherits its color and
+   size, and only swaps the family/weight/style. Not a general-purpose
+   heading style; landing-page headlines only. */
+.font-display-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
   color: inherit;
-  text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* Respect the "reduced motion" accessibility preference across the app. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Landing page only — a gentle idle float for the hero's floating product
+   badges, and a very slow ambient drift for background glows. Both are
+   fully neutralized by the prefers-reduced-motion block above (it forces
+   a single ~0ms iteration), so no extra guarding is needed at call sites. */
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes landing-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(2%, 3%) scale(1.05);
   }
 }

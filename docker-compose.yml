@@ -11,5 +11,113 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  # --- MongoDB (MySQL -> MongoDB migration prep — NOT yet used by the app) ---
+  # A single-node replica set, required because Prisma's MongoDB connector
+  # needs transactions, which MongoDB only supports on a replica set (even a
+  # one-member one) — a plain standalone mongod is not enough.
+
+  # Combining replica-set mode with root-user auth requires a keyFile for
+  # internal cluster-member authentication (mongod refuses to start without
+  # one: "security.keyFile is required when authorization is enabled with
+  # replica sets") — generated once into a named volume so it never touches
+  # the host filesystem or git, with the exact permissions (400, owned by
+  # the mongodb image's uid 999) mongod requires.
+  mongodb-keyfile-init:
+    image: mongo:7
+    container_name: job-application-tracker-mongodb-keyfile-init
+    restart: "no"
+    volumes:
+      - mongodb_keyfile:/keyfile
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -e
+        if [ ! -f /keyfile/mongo-keyfile ]; then
+          openssl rand -base64 756 > /keyfile/mongo-keyfile
+          echo "[mongodb-keyfile-init] Generated new replica set keyfile."
+        else
+          echo "[mongodb-keyfile-init] Keyfile already exists."
+        fi
+        chmod 400 /keyfile/mongo-keyfile
+        chown 999:999 /keyfile/mongo-keyfile
+
+  mongodb:
+    image: mongo:7
+    container_name: job-application-tracker-mongodb
+    restart: unless-stopped
+    # mongod's internal port intentionally matches the host-mapped port
+    # (both ${MONGO_PORT:-27018}) below, and the replica set member is
+    # advertised as localhost:${MONGO_PORT} in mongodb-init — so that
+    # address is simultaneously correct from the container's own
+    # self-identity check during rs.initiate() AND reachable from the
+    # Next.js app running on the host machine (not in Docker). Using
+    # mismatched internal/external ports here causes rs.initiate() to fail
+    # with "No host described ... maps to this node".
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "${MONGO_PORT:-27018}", "--keyFile", "/data/keyfile/mongo-keyfile"]
+    depends_on:
+      mongodb-keyfile-init:
+        condition: service_completed_successfully
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-career360}
+      MONGO_PORT: ${MONGO_PORT:-27018}
+    ports:
+      - "${MONGO_PORT:-27018}:${MONGO_PORT:-27018}"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_keyfile:/data/keyfile:ro
+    healthcheck:
+      # Authenticates as the root user — once MONGO_INITDB_ROOT_USERNAME is
+      # set, the server only accepts authenticated connections (except the
+      # brief bootstrap window on first init), so an unauthenticated ping
+      # would report unhealthy forever after the first startup.
+      test: >
+        mongosh --quiet --port "$$MONGO_PORT"
+        --username "$$MONGO_INITDB_ROOT_USERNAME"
+        --password "$$MONGO_INITDB_ROOT_PASSWORD"
+        --authenticationDatabase admin
+        --eval "db.adminCommand('ping').ok"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  # One-shot: initializes the rs0 replica set once mongodb is healthy, then
+  # exits (restart: "no"). Safe to re-run — it checks rs.status() first and
+  # only calls rs.initiate() if the replica set isn't already initialized.
+  mongodb-init:
+    image: mongo:7
+    container_name: job-application-tracker-mongodb-init
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_PORT: ${MONGO_PORT:-27018}
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -e
+        mongosh --host mongodb --port "$$MONGO_PORT" \
+          --username "$$MONGO_INITDB_ROOT_USERNAME" \
+          --password "$$MONGO_INITDB_ROOT_PASSWORD" \
+          --authenticationDatabase admin --quiet --eval '
+            try {
+              rs.status();
+              print("[mongodb-init] Replica set already initialized.");
+            } catch (e) {
+              rs.initiate({
+                _id: "rs0",
+                members: [{ _id: 0, host: "localhost:'"$$MONGO_PORT"'" }]
+              });
+              print("[mongodb-init] Replica set initiated.");
+            }
+          '
+
 volumes:
   mysql_data:
+  mongodb_data:
+  mongodb_keyfile:

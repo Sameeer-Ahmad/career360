@@ -1,0 +1,177 @@
+// Frozen snapshot of the application's MySQL schema, taken immediately
+// before prisma/schema.prisma was converted to MongoDB (the real
+// migration cutover). Exists ONLY so migration/rollback tooling under
+// mongo-migration/ retains a working MySQL Prisma client after the main
+// generated client (node_modules/@prisma/client) becomes Mongo-only.
+// Not the active application schema — do not edit to add new
+// features; this is a point-in-time reference for as long as MySQL is
+// kept as a rollback/reference database.
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/mysql-client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  applications Application[]
+  documents    Document[]
+}
+
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  website   String?  @db.VarChar(2048)
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+
+  @@index([name])
+}
+
+model Application {
+  id             Int               @id @default(autoincrement())
+  userId         Int
+  companyId      Int
+  jobTitle       String
+  jobUrl         String?           @db.VarChar(2048)
+  location       String?
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String?
+  employmentType EmploymentType?
+  appliedAt      DateTime?
+  status         ApplicationStatus @default(WISHLIST)
+  jobDescription String?           @db.Text
+  priority       Priority?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company         Company    @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  taggedResumes   Document[] @relation("DocumentApplication")
+
+  @@index([userId, status])
+  @@index([companyId])
+}
+
+model Document {
+  id               Int                   @id @default(autoincrement())
+  userId           Int
+  type             DocumentType          @default(RESUME)
+  contentFormat    DocumentContentFormat @default(PLAIN)
+  // Only meaningful for standalone (sourceDocumentId = null) RESUME documents —
+  // distinguishes the user's normal/default resume from their optional
+  // complete career-content library. Null for tailored versions and for
+  // non-RESUME document types.
+  resumeRole       ResumeRole?
+  title            String
+  content          String                @db.Text
+  sourceDocumentId Int?
+  // The Master Resume (if any) consulted when this tailored version was
+  // created — a secondary reference distinct from sourceDocumentId (the
+  // resume actually being tailored, usually the Main Resume). SetNull on
+  // delete: losing the referenced Master shouldn't delete the tailored work.
+  masterDocumentId Int?
+  applicationId    Int?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceDocument      Document?    @relation("DocumentVersions", fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  versions            Document[]   @relation("DocumentVersions")
+  masterDocument      Document?    @relation("DocumentMasterReference", fields: [masterDocumentId], references: [id], onDelete: SetNull)
+  tailoredUsingAsMaster Document[] @relation("DocumentMasterReference")
+  application         Application? @relation("DocumentApplication", fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([sourceDocumentId])
+  @@index([masterDocumentId])
+  @@index([applicationId])
+}
+
+enum DocumentType {
+  RESUME
+  COVER_LETTER
+  OTHER
+}
+
+enum DocumentContentFormat {
+  PLAIN
+  LATEX
+}
+
+enum ResumeRole {
+  MAIN
+  MASTER
+}
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  ACCEPTED
+  REJECTED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}

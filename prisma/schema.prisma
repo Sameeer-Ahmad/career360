@@ -1,26 +1,103 @@
+// MongoDB schema — active application schema as of the MySQL -> MongoDB
+// cutover. Field-for-field identical to the validated candidate schema at
+// mongo-migration/prisma/schema.prisma (dry-run migration + 11/11
+// validation passed against both the scratch and real career360
+// databases before this file was adopted). MySQL is retained temporarily
+// as a rollback/reference database — see mongo-migration/prisma-mysql-snapshot/
+// for its frozen schema and mongo-migration/scripts/ for the migration
+// tooling, both left fully intact.
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mongodb"
+  url      = env("MONGODB_DATABASE_URL")
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  avatarUrl     String?
+  /// scrypt-hashed password (see src/lib/password.ts), format
+  /// "<saltHex>:<derivedKeyHex>" — null for Google-only accounts that have
+  /// never set one. Never selected/returned outside auth.ts's Credentials
+  /// authorize() and the signup flow.
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  applications Application[]
+  accounts                 Account[]
+  sessions                 Session[]
+  applications             Application[]
+  documents                Document[]
+  learningPaths            LearningPath[]
+  googleCalendarConnection GoogleCalendarConnection?
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Deliberately separate from Account (which NextAuth's PrismaAdapter owns
+// and manages for login) — reusing that model for a second, independently
+// refreshed token set (Calendar, requested via its own explicit consent
+// flow, narrower scope) would risk NextAuth's own login/session bookkeeping
+// clobbering or being clobbered by Calendar-specific token refreshes. One
+// row per user; connecting again (e.g. after a revoke) upserts in place.
+model GoogleCalendarConnection {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String   @unique @db.ObjectId
+  accessToken          String
+  refreshToken         String
+  accessTokenExpiresAt DateTime
+  scope                String
+  /// The connected Google account's email — display-only, fetched once at
+  /// connect time via Google's userinfo endpoint. Deliberately independent
+  /// of the Career360 login account (see auth.ts), which may use a
+  /// different email entirely. Null if the userinfo lookup ever failed
+  /// (non-fatal — the connection itself still works without it).
+  googleEmail          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Company {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  website   String?  @db.VarChar(2048)
+  website   String?
   location  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -31,11 +108,11 @@ model Company {
 }
 
 model Application {
-  id             Int               @id @default(autoincrement())
-  userId         Int
-  companyId      Int
+  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String            @db.ObjectId
+  companyId      String            @db.ObjectId
   jobTitle       String
-  jobUrl         String?           @db.VarChar(2048)
+  jobUrl         String?
   location       String?
   salaryMin      Int?
   salaryMax      Int?
@@ -43,16 +120,226 @@ model Application {
   employmentType EmploymentType?
   appliedAt      DateTime?
   status         ApplicationStatus @default(WISHLIST)
-  jobDescription String?           @db.Text
+  jobDescription String?
   priority       Priority?
+  // The scheduled interview date/time, if any — set manually by the user
+  // (there is no AI-driven interview detection). Powers the "Add to Google
+  // Calendar" interview integration; null means no interview is scheduled.
+  interviewAt    DateTime?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  taggedResumes Document[]     @relation("DocumentApplication")
+  learningPaths LearningPath[]
 
   @@index([userId, status])
   @@index([companyId])
+}
+
+model Document {
+  id               String                @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String                @db.ObjectId
+  type             DocumentType          @default(RESUME)
+  contentFormat    DocumentContentFormat @default(PLAIN)
+  // Only meaningful for standalone (sourceDocumentId = null) RESUME documents —
+  // distinguishes the user's normal/default resume from their optional
+  // complete career-content library. Null for tailored versions and for
+  // non-RESUME document types.
+  resumeRole       ResumeRole?
+  title            String
+  content          String
+  sourceDocumentId String?               @db.ObjectId
+  // The Master Resume (if any) consulted when this tailored version was
+  // created — a secondary reference distinct from sourceDocumentId (the
+  // resume actually being tailored, usually the Main Resume).
+  masterDocumentId String?               @db.ObjectId
+  applicationId    String?               @db.ObjectId
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Prisma's MongoDB connector REQUIRES both onDelete and onUpdate to be
+  // NoAction on a self-relation (confirmed empirically against 6.19.3 —
+  // any other onDelete value is a schema-validation-time error). This
+  // means the Cascade (deleting a source deletes its tailored versions)
+  // and SetNull (deleting a Master nulls masterDocumentId on tailored
+  // versions) behavior the old MySQL schema declared cannot be
+  // Prisma-emulated here — it is implemented explicitly in
+  // src/lib/documents.ts's deleteDocument(), which finds and handles
+  // both cascades itself before deleting the target document.
+  sourceDocument        Document?    @relation("DocumentVersions", fields: [sourceDocumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  versions              Document[]   @relation("DocumentVersions")
+  masterDocument        Document?    @relation("DocumentMasterReference", fields: [masterDocumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tailoredUsingAsMaster Document[]   @relation("DocumentMasterReference")
+  application           Application? @relation("DocumentApplication", fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([sourceDocumentId])
+  @@index([masterDocumentId])
+  @@index([applicationId])
+}
+
+model LearningPath {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String             @db.ObjectId
+  source        LearningPathSource
+  // Optional regardless of source — a RECOMMENDED path may or may not be
+  // tied to a specific application (a general "based on your whole
+  // profile" recommendation has none); an APPLICATION path always has one.
+  applicationId String?            @db.ObjectId
+  title         String
+  summary       String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application Application?    @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  topics      LearningTopic[]
+
+  @@index([userId])
+  @@index([applicationId])
+}
+
+model LearningTopic {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  learningPathId   String           @db.ObjectId
+  topic            String
+  reason           String
+  priority         LearningPriority
+  currentLevel     SkillLevel?
+  recommendedLevel SkillLevel?
+  prerequisites    String[]
+  order            Int              @default(0)
+  createdAt        DateTime         @default(now())
+
+  learningPath LearningPath       @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  resources    LearningResource[]
+  note         LearningNote?
+  progress     LearningProgress?
+
+  @@index([learningPathId])
+}
+
+model LearningNote {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  learningTopicId String   @db.ObjectId
+  content         String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  learningTopic LearningTopic @relation(fields: [learningTopicId], references: [id], onDelete: Cascade)
+
+  @@unique([learningTopicId])
+}
+
+model LearningProgress {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  learningTopicId String         @db.ObjectId
+  status          ProgressStatus @default(NOT_STARTED)
+  completedAt     DateTime?
+  updatedAt       DateTime       @updatedAt
+
+  learningTopic LearningTopic @relation(fields: [learningTopicId], references: [id], onDelete: Cascade)
+
+  @@unique([learningTopicId])
+}
+
+model LearningResource {
+  id                 String                   @id @default(auto()) @map("_id") @db.ObjectId
+  learningTopicId    String                   @db.ObjectId
+  type               LearningResourceType
+  provider           LearningResourceProvider
+  discoveryMethod    ResourceDiscoveryMethod
+  title              String
+  whyRecommended     String
+  // User-supplied optional description — only ever set for USER_ADDED
+  // resources; YouTube/documentation resources use whyRecommended instead.
+  description        String?
+  url                String
+  thumbnailUrl       String?
+  providerResourceId String
+  channelName        String?
+  channelId          String?
+  durationSeconds    Int?
+  itemCount          Int?
+  publishedAt        DateTime?
+  viewCount          Int?
+  isOfficial         Boolean                  @default(false)
+  relevanceScore     Float
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  learningTopic LearningTopic @relation(fields: [learningTopicId], references: [id], onDelete: Cascade)
+
+  @@unique([learningTopicId, provider, providerResourceId])
+  @@index([learningTopicId])
+  @@index([type])
+  @@index([relevanceScore])
+}
+
+enum LearningPathSource {
+  PERSONAL
+  APPLICATION
+  RECOMMENDED
+}
+
+enum LearningPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum SkillLevel {
+  NONE
+  FAMILIAR
+  PROFICIENT
+}
+
+enum LearningResourceType {
+  VIDEO
+  PLAYLIST
+  DOCUMENTATION
+  ARTICLE
+  COURSE
+  GITHUB
+  OTHER
+}
+
+enum LearningResourceProvider {
+  YOUTUBE
+  OFFICIAL_DOCS
+  USER_LINK
+}
+
+enum ResourceDiscoveryMethod {
+  SEARCH
+  CURATED
+  USER_ADDED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum DocumentType {
+  RESUME
+  COVER_LETTER
+  OTHER
+}
+
+enum DocumentContentFormat {
+  PLAIN
+  LATEX
+}
+
+enum ResumeRole {
+  MAIN
+  MASTER
 }
 
 enum ApplicationStatus {
