@@ -101,3 +101,11 @@ export function toDateInputValue(value: Date | string | null | undefined): strin
   const date = typeof value === "string" ? new Date(value) : value;
   return date.toISOString().slice(0, 10);
 }
+
+/** Formats a Date (or null) into the yyyy-MM-ddTHH:mm shape <input type="datetime-local"> expects, in the browser's own local time (not UTC) — matches how the input itself interprets and returns values. */
+export function toDateTimeInputValue(value: Date | string | null | undefined): string {
+  if (!value) return "";
+  const date = typeof value === "string" ? new Date(value) : value;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}

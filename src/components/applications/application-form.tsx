@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { EMPLOYMENT_TYPE_LABELS, PRIORITY_LABELS, STATUS_LABELS, toDateInputValue } from "@/lib/format";
+import { EMPLOYMENT_TYPE_LABELS, PRIORITY_LABELS, STATUS_LABELS, toDateInputValue, toDateTimeInputValue } from "@/lib/format";
 import { AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
@@ -29,6 +29,7 @@ type FormValues = {
   status: ApplicationStatus;
   priority: Priority | "";
   jobDescription: string;
+  interviewAt: string;
 };
 
 export type ApplicationFormInitialValues = {
@@ -43,6 +44,7 @@ export type ApplicationFormInitialValues = {
   status: ApplicationStatus;
   priority?: Priority | null;
   jobDescription?: string | null;
+  interviewAt?: Date | string | null;
 };
 
 function toFormValues(initial?: ApplicationFormInitialValues): FormValues {
@@ -58,6 +60,7 @@ function toFormValues(initial?: ApplicationFormInitialValues): FormValues {
     status: initial?.status ?? "WISHLIST",
     priority: initial?.priority ?? "",
     jobDescription: initial?.jobDescription ?? "",
+    interviewAt: toDateTimeInputValue(initial?.interviewAt),
   };
 }
 
@@ -98,6 +101,7 @@ function toRequestBody(values: FormValues) {
     status: values.status,
     priority: values.priority || null,
     jobDescription: values.jobDescription.trim() || null,
+    interviewAt: values.interviewAt ? new Date(values.interviewAt).toISOString() : null,
   };
 }
 
@@ -276,6 +280,16 @@ export function ApplicationForm({
               type="date"
               value={values.appliedAt}
               onChange={(e) => update("appliedAt", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="interviewAt">Interview date &amp; time</Label>
+            <Input
+              id="interviewAt"
+              type="datetime-local"
+              value={values.interviewAt}
+              onChange={(e) => update("interviewAt", e.target.value)}
             />
           </div>
 

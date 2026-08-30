@@ -44,6 +44,7 @@ type ApplicationInput = {
   status?: ApplicationStatus;
   jobDescription?: string | null;
   priority?: Priority | null;
+  interviewAt?: Date | null;
 };
 
 function isNonEmptyString(value: unknown): value is string {
@@ -161,6 +162,16 @@ function parseApplicationInput(
     }
   }
 
+  if (raw.interviewAt !== undefined) {
+    if (raw.interviewAt === null) {
+      data.interviewAt = null;
+    } else if (typeof raw.interviewAt !== "string" || Number.isNaN(Date.parse(raw.interviewAt))) {
+      issues.push("interviewAt must be an ISO date-time string or null");
+    } else {
+      data.interviewAt = new Date(raw.interviewAt);
+    }
+  }
+
   if (issues.length > 0) {
     throw new ValidationError(issues);
   }
@@ -211,6 +222,7 @@ export async function createApplication(userId: string, body: unknown) {
       status: input.status,
       jobDescription: input.jobDescription ?? null,
       priority: input.priority ?? null,
+      interviewAt: input.interviewAt ?? null,
     },
     include: { company: true },
   });
@@ -386,6 +398,7 @@ export async function updateApplication(userId: string, id: string, body: unknow
       status: input.status,
       jobDescription: input.jobDescription,
       priority: input.priority,
+      interviewAt: input.interviewAt,
     },
     include: { company: true },
   });
@@ -395,5 +408,12 @@ export async function deleteApplication(userId: string, id: string) {
   const existing = await prisma.application.findFirst({ where: { id, userId } });
   if (!existing) throw new NotFoundError();
 
+  // Defensive, explicit SetNull: MongoDB's Prisma connector DOES emulate
+  // Document.application's onDelete: SetNull automatically (verified during
+  // the migration's referential-action tests), but this is done explicitly
+  // anyway as a documented safety net rather than relying solely on that
+  // emulation — matches the same defensive pattern deleteDocument() below
+  // uses for the two relations that are NOT auto-emulated.
+  await prisma.document.updateMany({ where: { applicationId: id }, data: { applicationId: null } });
   await prisma.application.delete({ where: { id } });
 }
