@@ -7,22 +7,35 @@ import { cn } from "@/lib/cn";
 export function Collapsible({
   title,
   defaultOpen = false,
+  open: controlledOpen,
+  onOpenChange,
   children,
   className,
 }: {
   title: ReactNode;
   defaultOpen?: boolean;
+  /** Controlled open state — when provided (with onOpenChange), the parent owns whether this is open, e.g. to jump to and expand a specific row from elsewhere in the UI. Omit for the default uncontrolled behavior. */
+  open?: boolean;
+  /** Called whenever the open state changes — e.g. to lazily fetch content the first time it's expanded, or to update controlled `open` state. */
+  onOpenChange?: (open: boolean) => void;
   children: ReactNode;
   className?: string;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const open = controlledOpen ?? uncontrolledOpen;
   const contentId = useId();
+
+  function toggle() {
+    const next = !open;
+    if (controlledOpen === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  }
 
   return (
     <div className={cn("rounded-md border border-border", className)}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         aria-expanded={open}
         aria-controls={contentId}
         className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

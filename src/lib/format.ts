@@ -1,4 +1,14 @@
-import type { ApplicationStatus, DocumentContentFormat, DocumentType, EmploymentType, Priority, ResumeRole } from "@prisma/client";
+import type {
+  ApplicationStatus,
+  DocumentContentFormat,
+  DocumentType,
+  EmploymentType,
+  LearningPathSource,
+  LearningResourceType,
+  Priority,
+  ResumeRole,
+  SkillLevel,
+} from "@prisma/client";
 
 export type BadgeVariant = "neutral" | "primary" | "success" | "warning" | "destructive" | "info";
 
@@ -40,6 +50,28 @@ export const DOCUMENT_CONTENT_FORMAT_LABELS: Record<DocumentContentFormat, strin
 export const RESUME_ROLE_LABELS: Record<ResumeRole, string> = {
   MAIN: "Main Resume",
   MASTER: "Master Resume",
+};
+
+export const LEARNING_SOURCE_LABELS: Record<LearningPathSource, string> = {
+  PERSONAL: "Personal",
+  APPLICATION: "Application",
+  RECOMMENDED: "Recommended",
+};
+
+export const SKILL_LEVEL_LABELS: Record<SkillLevel, string> = {
+  NONE: "None",
+  FAMILIAR: "Familiar",
+  PROFICIENT: "Proficient",
+};
+
+export const LEARNING_RESOURCE_TYPE_LABELS: Record<LearningResourceType, string> = {
+  VIDEO: "Video",
+  PLAYLIST: "Playlist",
+  DOCUMENTATION: "Documentation",
+  ARTICLE: "Article",
+  COURSE: "Course",
+  GITHUB: "GitHub",
+  OTHER: "Other",
 };
 
 export function formatDate(value: Date | string | null | undefined): string {
