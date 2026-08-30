@@ -7,9 +7,7 @@ const STATE_COOKIE = "career360_gcal_oauth_state";
 const RETURN_TO_COOKIE = "career360_gcal_return_to";
 const STATE_COOKIE_MAX_AGE_SECONDS = 10 * 60;
 
-// Where the callback sends the user back to once connected — only these two
-// pages link the Calendar connect flow today. Validated against an allowlist
-// (rather than trusted verbatim) so this can never become an open redirect.
+// Validated against an allowlist (never trusted verbatim) so this can never become an open redirect.
 const ALLOWED_RETURN_PATHS = ["/calendar", "/settings"];
 
 /** Starts the Calendar connection flow — separate from NextAuth's own login provider (src/auth.ts), so existing Google sign-in is never touched. */

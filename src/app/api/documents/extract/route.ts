@@ -9,12 +9,8 @@ import {
   UnsupportedFileTypeError,
 } from "@/lib/documents/resume-extraction";
 
-/**
- * Extracts plain text from an uploaded PDF/DOCX resume so the client can
- * show it for review before saving. Never persists the original file — it
- * exists only in memory for the duration of this request. Parsing logic and
- * any related credentials never reach the client.
- */
+// Extracts plain text from an uploaded PDF/DOCX resume for review before
+// saving. Never persists the original file — it stays in memory only.
 export async function POST(request: NextRequest) {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;

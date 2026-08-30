@@ -1,8 +1,7 @@
-// Pure, deterministic mapping helpers — no network calls, no AI. Shared by
-// events.ts and the API routes. Career360-created events are marked via
-// Google's own extendedProperties.private (never encoded into the title),
-// which is also how existing events are found again for duplicate
-// prevention and ownership-scoped edit/delete — see events.ts.
+// Pure, deterministic mapping helpers shared by events.ts and the API
+// routes. Career360-created events are marked via Google's own
+// extendedProperties.private (never encoded into the title), which is also
+// how they're found again for duplicate prevention and ownership checks.
 import type { BadgeVariant } from "@/lib/format";
 
 export type CalendarEventType = "INTERVIEW" | "FOLLOW_UP" | "APPLICATION_DEADLINE" | "LEARNING_SESSION";
@@ -21,14 +20,7 @@ export const CALENDAR_EVENT_TYPE_LABELS: Record<CalendarEventType, string> = {
   LEARNING_SESSION: "Learning Session",
 };
 
-/**
- * Shared Badge coloring for a Career360 event type — the Calendar
- * workspace (month grid / event detail) and the Dashboard's Upcoming
- * section both need the exact same type→color mapping, so it lives here
- * once rather than being duplicated. `BadgeVariant`'s type import has no
- * runtime cost (it's just a string union) so this stays a dependency-free
- * pure module.
- */
+/** Shared Badge coloring for a Career360 event type — used by both the Calendar workspace and the Dashboard's Upcoming section. */
 export const CALENDAR_EVENT_TYPE_BADGE_VARIANT: Record<CalendarEventType, BadgeVariant> = {
   INTERVIEW: "primary",
   FOLLOW_UP: "info",
@@ -36,7 +28,7 @@ export const CALENDAR_EVENT_TYPE_BADGE_VARIANT: Record<CalendarEventType, BadgeV
   LEARNING_SESSION: "neutral",
 };
 
-/** Default popup reminders (minutes before the event) — a starting point the user can add to, remove from, or fully override before creating the event; never mandatory. Interview and Follow-up's three-reminder default (1 day / 1 hour / 10 minutes before) is explicit product spec. */
+/** Default popup reminders (minutes before the event) — a starting point the user can add to, remove from, or fully override. */
 export const DEFAULT_REMINDER_MINUTES: Record<CalendarEventType, number[]> = {
   INTERVIEW: [24 * 60, 60, 10],
   FOLLOW_UP: [24 * 60, 60, 10],
@@ -56,15 +48,9 @@ export const REMINDER_OPTIONS: { label: string; minutes: number }[] = [
   { label: "1 week before", minutes: 7 * 24 * 60 },
 ];
 
-const MAX_REMINDER_MINUTES = 4 * 7 * 24 * 60; // 4 weeks — a generous upper bound, defense-in-depth against a malformed request rather than a real product constraint
+const MAX_REMINDER_MINUTES = 4 * 7 * 24 * 60; // 4 weeks — generous upper bound against a malformed request
 
-/**
- * Builds Google's `reminders.overrides` array from a list of lead times
- * (minutes before the event): drops invalid/out-of-range values,
- * deduplicates, and sorts descending — chronological firing order, since
- * a larger lead time (e.g. 1 week before) fires earlier in real time than
- * a smaller one (e.g. 10 minutes before), matching how the UI lists them.
- */
+/** Builds Google's `reminders.overrides` array: drops invalid/out-of-range values, deduplicates, and sorts descending (largest lead time first). */
 export function buildReminderOverrides(minutesList: number[]): { method: "popup"; minutes: number }[] {
   const valid = minutesList.filter(
     (m) => Number.isFinite(m) && Number.isInteger(m) && m >= 0 && m <= MAX_REMINDER_MINUTES,
@@ -129,11 +115,9 @@ export const WEEKDAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const
 export type WeekdayCode = (typeof WEEKDAY_CODES)[number];
 
 /**
- * Builds an RFC5545 RRULE for a weekly-recurring Learning Session — e.g.
+ * Builds an RFC5545 RRULE for a weekly-recurring Learning Session, e.g.
  * `RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR;UNTIL=20261123T000000Z`. Bounded to
- * ~90 days out from `startDate` by default so a schedule doesn't recur
- * forever unattended — the user can always extend it directly in Google
- * Calendar (the source of truth) if they want more.
+ * ~90 days by default so a schedule doesn't recur forever unattended.
  */
 export function buildWeeklyRecurrenceRule(days: WeekdayCode[], startDate: Date, horizonDays = 90): string {
   const until = new Date(startDate.getTime() + horizonDays * 24 * 60 * 60 * 1000);

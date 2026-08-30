@@ -1,8 +1,5 @@
-// Curated official-documentation config for Learning Resources. Matched
-// deterministically against a LearningTopic's topic string — no AI
-// involvement, no scraping. A topic that matches no entry simply gets no
-// DOCUMENTATION resource, which is valid, expected behavior. Extend this
-// list to grow coverage; it never requires a schema or generation change.
+// Curated official-documentation config, matched deterministically against a topic string — no AI, no scraping.
+// A topic matching no entry simply gets no DOCUMENTATION resource.
 
 export type OfficialDocEntry = {
   key: string;
@@ -25,13 +22,7 @@ export const OFFICIAL_DOCS: OfficialDocEntry[] = [
   { key: "django", title: "Django Documentation", url: "https://docs.djangoproject.com/", aliases: ["django"] },
 ];
 
-/**
- * Matches a LearningTopic's topic string against the curated config,
- * case-insensitively, by alias substring. Returns at most `limit` entries
- * (order follows OFFICIAL_DOCS declaration order; a topic mentioning both
- * "React" and "Next.js" gets both, up to the cap). Returns [] on no match
- * — that is valid, not an error.
- */
+/** Matches a topic string against the curated config, case-insensitively by alias substring. Returns at most `limit` entries in declaration order; [] on no match. */
 export function matchOfficialDocs(topic: string, limit: number): OfficialDocEntry[] {
   const normalized = topic.toLowerCase();
   const matches: OfficialDocEntry[] = [];

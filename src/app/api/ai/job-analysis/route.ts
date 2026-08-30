@@ -44,9 +44,7 @@ export async function POST(request: NextRequest) {
   let context: ReturnType<typeof toApplicationContext> | undefined;
 
   if (applicationId !== null) {
-    // The stored description is authoritative when analyzing from an application —
-    // any client-supplied jobDescription is ignored to avoid analyzing text that
-    // doesn't actually match the application being referenced.
+    // The stored description is authoritative — any client-supplied jobDescription is ignored.
     let application;
     try {
       application = await getApplication(userId, applicationId);

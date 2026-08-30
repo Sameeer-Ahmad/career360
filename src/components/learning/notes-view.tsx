@@ -7,11 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate } from "@/lib/format";
 import type { PathNoteRow } from "@/components/learning/learning-types";
 
-// ---------------------------------------------------------------------------
-// Notes view — aggregated across every topic, via a single request. Empty
-// notes are never shown; the whole view has a dedicated empty state.
-// ---------------------------------------------------------------------------
-
+// Notes across all topics come from one aggregate request, not a per-topic fetch.
 export function NotesView({
   notes,
   loading,

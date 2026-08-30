@@ -1,10 +1,6 @@
 // Server-only. All Google Calendar API access for Career360 goes through
-// this module — never scattered across routes/components. Only ever
-// operates on `calendarId=primary` (the authenticated user's own primary
-// calendar), using that user's own resolved access token (see
-// connection.ts) — there is no code path here that accepts a token from
-// the browser or reaches another user's calendar. Never logs a token, a
-// request body, or a raw Google response body — only status/reason.
+// this module, always scoped to `calendarId=primary` using the user's own
+// resolved access token. Never logs a token or a raw request/response body.
 import {
   forceRefreshAccessToken,
   getValidAccessToken,
@@ -82,11 +78,8 @@ async function rawFetch(accessToken: string, method: string, path: string, body?
 }
 
 /**
- * Resolves a valid access token, makes one Calendar API call, and — only
- * if Calendar itself rejects that token with 401 (e.g. revoked
- * independent of our locally-tracked expiry) — force-refreshes once and
- * retries exactly once more. Every high-level operation below goes
- * through this single choke point for token handling and error mapping.
+ * Resolves a valid access token and makes one Calendar API call; if
+ * Calendar rejects it with 401, force-refreshes once and retries once more.
  */
 async function calendarRequest(userId: string, method: string, path: string, body?: unknown): Promise<RawResult> {
   const accessToken = await getValidAccessToken(userId);
@@ -164,18 +157,9 @@ function toEventSummary(raw: Record<string, unknown>): CalendarEventSummary {
   };
 }
 
-// A calendar month/week view never needs more than this many events
-// rendered — well above what any real month realistically has, purely a
-// safety cap so a request is never unbounded.
-const MAX_RANGE_RESULTS = 250;
+const MAX_RANGE_RESULTS = 250; // safety cap so a request is never unbounded
 
-/**
- * Events on the user's primary calendar within an explicit [timeMin,
- * timeMax) window — powers the Career360 Calendar UI's month/week views,
- * which the caller re-requests only when the user actually navigates
- * (never a polling loop, never unbounded historical data). Bounded by
- * MAX_RANGE_RESULTS regardless of the window size.
- */
+/** Events on the user's primary calendar within an explicit [timeMin, timeMax) window — powers the Calendar UI's month/week views. */
 export async function listEventsInRange(userId: string, timeMinIso: string, timeMaxIso: string): Promise<CalendarEventSummary[]> {
   const params = new URLSearchParams({
     timeMin: timeMinIso,
@@ -193,12 +177,7 @@ export async function listEventsInRange(userId: string, timeMinIso: string, time
   return items.map((item) => toEventSummary(item as Record<string, unknown>));
 }
 
-/**
- * Looks for an existing, non-cancelled Career360 event matching the given
- * type + related entity — the duplicate-prevention check used before
- * showing "Add to Google Calendar" (an Interview event already added
- * shows "Added" instead). Never creates anything.
- */
+/** Looks for an existing, non-cancelled Career360 event matching the given type + related entity — the duplicate-prevention check before "Add to Google Calendar". */
 export async function findExistingEvent(userId: string, props: Career360ExtendedProperties): Promise<CalendarEventSummary | null> {
   const params = new URLSearchParams({ singleEvents: "true", showDeleted: "false" });
   for (const filter of buildLookupFilters(props)) {
@@ -214,12 +193,9 @@ export async function findExistingEvent(userId: string, props: Career360Extended
 }
 
 /**
- * Every non-cancelled Career360 event of the given type tied to a given
- * application — unlike findExistingEvent (which returns at most one, for
- * dedup-check UIs like the Interview button), this powers the Application
- * Detail "Follow-ups" list, where multiple genuinely separate events for
- * the same application are expected and must all be shown. Ordered
- * earliest-first via startTime, same as listEventsInRange.
+ * Every non-cancelled Career360 event of the given type tied to an
+ * application — unlike findExistingEvent, this returns all matches (powers
+ * the Application Detail "Follow-ups" list), ordered earliest-first.
  */
 export async function findEventsForApplication(
   userId: string,
@@ -264,9 +240,7 @@ function validateCreateInput(input: CreateCalendarEventInput): void {
   if (Number.isNaN(startMs)) issues.push("start must be a valid date/time");
   if (Number.isNaN(Date.parse(input.endIso))) issues.push("end must be a valid date/time");
   if (Date.parse(input.endIso) <= startMs) issues.push("end must be after start");
-  // No arbitrary minimum lead time — only that the event hasn't already
-  // happened. Re-checked here even though the client also validates this,
-  // since a client bypass must never be able to create a past event.
+  // Re-checked here (not just client-side) so a client bypass can't create a past event.
   if (!Number.isNaN(startMs) && startMs <= Date.now()) issues.push("start must be in the future");
   if (!Array.isArray(input.reminderMinutes)) issues.push("reminderMinutes must be an array of minute values");
   if (issues.length > 0) throw new GoogleCalendarInvalidEventError(issues);

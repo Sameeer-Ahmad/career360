@@ -15,12 +15,7 @@ function parseId(value: unknown): string | null {
   return isValidObjectId(value) ? value : null;
 }
 
-/**
- * Generates a cover letter draft PREVIEW only — nothing is persisted here.
- * The client reviews/edits it and PUTs it to /api/applications/[id]/cover-letter
- * to actually save it, same "generate preview, save separately" shape as
- * /api/learning/generate.
- */
+/** Generates a draft PREVIEW only; the client PUTs to /api/applications/[id]/cover-letter to save it. */
 export async function POST(request: NextRequest) {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;

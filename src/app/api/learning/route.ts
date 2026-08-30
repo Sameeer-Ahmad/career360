@@ -31,14 +31,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(paths);
 }
 
-/**
- * Saves a learning path — either a reviewed AI-generated preview (source
- * APPLICATION or RECOMMENDED) or a manually-created path with no AI
- * involvement (source PERSONAL). The body is fully re-validated here
- * regardless of where it came from — a client-submitted "preview" is never
- * trusted as already-safe just because /generate produced something that
- * looked like it earlier.
- */
+/** Saves a learning path — a reviewed AI preview or a manually-created PERSONAL path. Fully re-validated regardless of source; a client-submitted preview is never trusted as-is. */
 export async function POST(request: NextRequest) {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;

@@ -42,9 +42,8 @@ export class ExtractedTextTooLongError extends Error {
   }
 }
 
-// Below this, treat extraction as having effectively failed (e.g. a
-// scanned/image-only PDF with no real text layer) rather than silently
-// accepting near-empty content.
+// Below this, treat extraction as failed (e.g. a scanned/image-only PDF)
+// rather than silently accepting near-empty content.
 const MIN_EXTRACTED_TEXT_LENGTH = 50;
 
 function detectFileKind(mimeType: string, filename: string): UploadFileKind | null {
@@ -52,9 +51,7 @@ function detectFileKind(mimeType: string, filename: string): UploadFileKind | nu
     return ACCEPTED_UPLOAD_MIME_TYPES[mimeType as keyof typeof ACCEPTED_UPLOAD_MIME_TYPES];
   }
   // Some browsers/OSes send a generic octet-stream MIME type — fall back to
-  // the file extension as a secondary signal (this only selects which parser
-  // to try; the parser itself will reject content that isn't actually
-  // valid).
+  // the file extension (the parser itself still rejects invalid content).
   const lower = filename.toLowerCase();
   if (lower.endsWith(".pdf")) return "pdf";
   if (lower.endsWith(".docx")) return "docx";
@@ -83,14 +80,9 @@ async function extractDocxText(buffer: Buffer): Promise<string> {
   }
 }
 
-/**
- * Reads a .tex file as strict UTF-8 text — no extraction, no normalization,
- * no trimming. LaTeX source is preserved exactly as uploaded (macros,
- * packages, comments, formatting) so the review step shows precisely what
- * was in the file. `fatal: true` makes invalid byte sequences throw instead
- * of silently becoming replacement characters, which is how a binary file
- * renamed to .tex gets caught rather than saved as garbled "text".
- */
+// Reads a .tex file as strict UTF-8 — preserved exactly as uploaded, no
+// normalization. `fatal: true` catches a binary file renamed to .tex instead
+// of decoding it into garbled replacement characters.
 function readLatexSource(buffer: Buffer): string {
   try {
     return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
@@ -107,17 +99,9 @@ export type ExtractedResume = {
   contentFormat: DocumentContentFormat;
 };
 
-/**
- * Extracts resume content from an uploaded PDF, DOCX, or .tex file,
- * server-side only. The original file is never persisted or sent anywhere
- * else — the buffer exists only for the duration of this call. Throws a
- * specific, user-safe error for every failure mode; never returns unusable
- * content silently.
- *
- * PDF/DOCX go through real extraction and light whitespace normalization
- * (they're derived text, not a source format). .tex is read as-is: no
- * normalization, no trimming — the LaTeX source is preserved exactly.
- */
+// Extracts resume content from an uploaded PDF, DOCX, or .tex file. The
+// original file is never persisted — the buffer only lives for this call.
+// PDF/DOCX get light whitespace normalization; .tex is preserved as-is.
 export async function extractResumeText(file: {
   buffer: Buffer;
   mimeType: string;

@@ -1,15 +1,9 @@
 import Link from "next/link";
 import { SidebarNav } from "@/components/shell/sidebar-nav";
-import { UserProfile } from "@/components/shell/user-profile";
+import { UserProfile, type ShellUser } from "@/components/shell/user-profile";
 import { LogoutButton } from "@/components/shell/logout-button";
 import { Divider } from "@/components/ui/divider";
 import { Logo } from "@/components/brand/logo";
-
-type ShellUser = {
-  name?: string | null;
-  email?: string | null;
-  avatarUrl?: string | null;
-};
 
 export function Sidebar({ user }: { user: ShellUser }) {
   return (

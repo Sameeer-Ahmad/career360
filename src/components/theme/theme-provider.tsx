@@ -34,10 +34,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>("light");
 
   useEffect(() => {
-    // Mount-time sync from a browser-only API (localStorage isn't available during
-    // SSR, so this can't be a lazy useState initializer without breaking hydration).
-    // The blocking init script in <head> already set the DOM class correctly before
-    // paint — this only syncs React's own state, so no flash results from the effect.
+    // localStorage isn't available during SSR, so this can't be a lazy
+    // useState initializer without breaking hydration. No flash results
+    // since the blocking init script in <head> already set the DOM class.
     const stored = (localStorage.getItem(THEME_STORAGE_KEY) as Theme | null) ?? "system";
     const resolved = stored === "system" ? getSystemTheme() : stored;
     // eslint-disable-next-line react-hooks/set-state-in-effect

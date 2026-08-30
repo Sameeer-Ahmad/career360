@@ -3,14 +3,14 @@ import { LearningResourceType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getOwnedTopic, ValidationError } from "@/lib/learning/learning-resources";
 
-/** Thrown when editing/deleting a resource that exists and belongs to the user, but isn't USER_ADDED — not an ownership problem (so not NotFoundError), just a capability the resource doesn't have. Safe to surface as-is since it never leaks another user's data. */
+/** Thrown when a resource exists and belongs to the user but isn't USER_ADDED — a capability gap, not an ownership problem, safe to surface as-is. */
 export class NotEditableError extends Error {
   constructor() {
     super("Only resources you added yourself can be edited or deleted.");
   }
 }
 
-/** Thrown when the topic itself is owned and valid, but no resource with the given id exists under it — distinct from NotFoundError (which means the topic itself is missing/not-yours) so routes can report an accurate, still-non-leaking message either way. */
+/** Thrown when the topic is owned but no resource with the given id exists under it — distinct from NotFoundError (topic missing/not-yours). */
 export class ResourceNotFoundError extends Error {
   constructor() {
     super("Resource not found");
@@ -94,14 +94,7 @@ export async function createUserResource(userId: string, topicId: string, body: 
   });
 }
 
-/**
- * Ownership-checked at both the topic and the resource level. Throws
- * NotFoundError if the topic itself doesn't exist/isn't owned,
- * ResourceNotFoundError if the topic is fine but no such resource exists
- * under it, and NotEditableError if the resource exists and is the user's
- * own topic's, but isn't USER_ADDED (a curated YOUTUBE/OFFICIAL_DOCS row
- * can never be mutated this way).
- */
+/** Ownership-checked at both topic and resource level. Throws NotFoundError, ResourceNotFoundError, or NotEditableError (curated YOUTUBE/OFFICIAL_DOCS rows can never be mutated this way). */
 async function getOwnedUserResource(userId: string, topicId: string, resourceId: string) {
   await getOwnedTopic(userId, topicId);
   const resource = await prisma.learningResource.findFirst({ where: { id: resourceId, learningTopicId: topicId } });

@@ -1,0 +1,120 @@
+{
+  "generatedAt": "2026-08-23T19:27:58.082Z",
+  "allPassed": true,
+  "checks": [
+    {
+      "name": "1. Per-model record counts match",
+      "passed": true,
+      "detail": {
+        "mysqlCounts": {
+          "user": 1,
+          "account": 2,
+          "session": 1,
+          "company": 13,
+          "application": 13,
+          "document": 9
+        },
+        "mongoCounts": {
+          "user": 1,
+          "account": 2,
+          "session": 1,
+          "company": 13,
+          "application": 13,
+          "document": 9
+        }
+      }
+    },
+    {
+      "name": "2. Every Application.userId resolves to the correctly-migrated User",
+      "passed": true,
+      "detail": {
+        "checked": 13,
+        "mismatches": []
+      }
+    },
+    {
+      "name": "3. Every Document.userId resolves to the correctly-migrated User",
+      "passed": true,
+      "detail": {
+        "checked": 9,
+        "mismatches": []
+      }
+    },
+    {
+      "name": "4. Source document chains intact (target exists, source exists, same user)",
+      "passed": true,
+      "detail": {
+        "checked": 7,
+        "problems": []
+      }
+    },
+    {
+      "name": "5. Master references intact (target exists, resumeRole = MASTER)",
+      "passed": true,
+      "detail": {
+        "checked": 7,
+        "problems": []
+      }
+    },
+    {
+      "name": "6. Application references intact (exists, same owning user as Document)",
+      "passed": true,
+      "detail": {
+        "checked": 7,
+        "problems": []
+      }
+    },
+    {
+      "name": "7. Main/Master resume-role counts per user match",
+      "passed": true,
+      "detail": {
+        "usersChecked": 1,
+        "mismatches": []
+      }
+    },
+    {
+      "name": "8. Tailored-version count matches (documents with sourceDocumentId)",
+      "passed": true,
+      "detail": {
+        "mysqlCount": 7,
+        "mongoCount": 7
+      }
+    },
+    {
+      "name": "9. Full-dataset scan: zero cross-user references",
+      "passed": true,
+      "detail": {
+        "applicationsScanned": 13,
+        "documentsScanned": 9,
+        "violations": []
+      }
+    },
+    {
+      "name": "10. Unique constraints reject real duplicate inserts",
+      "passed": true,
+      "detail": {
+        "userEmail": {
+          "rejected": true,
+          "code": "P2002"
+        },
+        "accountProviderCompound": {
+          "rejected": true,
+          "code": "P2002"
+        },
+        "sessionToken": {
+          "rejected": true,
+          "code": "P2002"
+        }
+      }
+    },
+    {
+      "name": "11. Content integrity (Document.content hash, title, status, timestamps)",
+      "passed": true,
+      "detail": {
+        "documentsChecked": 9,
+        "applicationsChecked": 13,
+        "mismatches": []
+      }
+    }
+  ]
+}

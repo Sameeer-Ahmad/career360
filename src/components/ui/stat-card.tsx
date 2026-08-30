@@ -24,10 +24,6 @@ export function StatCard({
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
         {Icon && (
-          // cn() here is a plain join (no tailwind-merge dedup — see
-          // lib/cn.ts), so the default tint and an override can never both
-          // be present at once; only one of the two class strings is ever
-          // passed in.
           <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-md", iconClassName ?? "bg-primary/10 text-primary")}>
             <Icon className="size-4.5" />
           </div>

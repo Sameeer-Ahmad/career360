@@ -101,13 +101,7 @@ const MAX_DOCS = 2;
 // Ownership
 // ---------------------------------------------------------------------------
 
-/**
- * Verifies the LearningTopic → LearningPath → userId ownership chain and
- * returns the minimal fields generation needs. Throws NotFoundError for
- * both "doesn't exist" and "belongs to someone else." Exported for
- * learning-user-resources.ts, which performs the same ownership check
- * before mutating a user-added resource.
- */
+/** Verifies the LearningTopic → LearningPath → userId ownership chain, throwing NotFoundError either way it fails. Also used by learning-user-resources.ts. */
 export async function getOwnedTopic(userId: string, topicId: string): Promise<{ id: string; topic: string }> {
   const topic = await prisma.learningTopic.findFirst({
     where: { id: topicId, learningPath: { userId } },
@@ -115,15 +109,6 @@ export async function getOwnedTopic(userId: string, topicId: string): Promise<{ 
   });
   if (!topic) throw new NotFoundError();
   return topic;
-}
-
-// ---------------------------------------------------------------------------
-// Query generation
-// ---------------------------------------------------------------------------
-
-/** The exact query used for both search.list calls — the topic string itself, no variants, no Groq involvement. */
-export function buildResourceQuery(topicText: string): string {
-  return topicText.trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -161,17 +146,9 @@ function dedupeById(items: YouTubeSearchResultItem[]): YouTubeSearchResultItem[]
   return result;
 }
 
-/**
- * Runs exactly two search.list calls (one video, one playlist — never more,
- * never Groq-generated variants), one batched videos.list call, and one
- * batched playlists.list call (skipped entirely when there are no
- * candidate IDs), then ranks/filters/caps the results and matches curated
- * documentation. Never touches the database — the caller (
- * refreshLearningResources) is responsible for persistence, and only after
- * this has fully succeeded.
- */
+/** Exactly one video search, one playlist search, and batched metadata calls (never per-item) — then ranks/filters/caps. Never touches the database; the caller persists. */
 async function buildResourceSet(topicId: string, topicText: string): Promise<ResourceRow[]> {
-  const query = buildResourceQuery(topicText);
+  const query = topicText.trim(); // the exact query for both searches — no variants, no Groq involvement
   const topicTokens = dedupeStrings(tokenize(topicText));
 
   const [videoResults, playlistResults] = await Promise.all([searchVideos(query), searchPlaylists(query)]);
@@ -345,24 +322,14 @@ function warningMessageFor(error: unknown): string {
 }
 
 /**
- * Ownership-checked, cooldown-checked, then calls YouTube and replaces the
- * topic's full resource set atomically (delete-then-recreate — never an
- * individual upsert, matching the same pattern replaceExistingRecommendedPath
- * and deleteLearningPath already use elsewhere in this codebase).
- *
- * On a YouTube-layer failure: if cached resources already exist, they are
- * returned unchanged with a `warning` — good cached data is never discarded
- * because a live call failed. Only when there is truly nothing cached does
- * the original error propagate, for the caller to map to a friendly
- * response.
+ * Ownership- and cooldown-checked, then replaces the topic's full resource set atomically (delete-then-recreate).
+ * On a YouTube failure, falls back to existing cached resources with a `warning` instead of discarding good data; only propagates the error when there's nothing cached.
  */
 export async function refreshLearningResources(userId: string, topicId: string): Promise<RefreshResourcesResult> {
   const topic = await getOwnedTopic(userId, topicId);
 
   const existingRows = await getResourceRows(topicId);
-  // Cooldown/freshness are computed only from the YouTube-search cache — a
-  // user manually adding their own resource must never block or reset the
-  // refresh cooldown for the discovered set.
+  // Cooldown/freshness reflect only the YouTube-search cache, never a user-added resource.
   const existingFetchedAt = computeFetchedAt(discoveredRows(existingRows));
 
   if (existingFetchedAt && Date.now() - existingFetchedAt.getTime() < REFRESH_COOLDOWN_MS) {
@@ -385,9 +352,7 @@ export async function refreshLearningResources(userId: string, topicId: string):
     throw error;
   }
 
-  // Only reached once the new set has been fully and successfully produced.
-  // Scoped to SEARCH/CURATED only — a USER_ADDED resource is never touched
-  // by a refresh, regardless of how many times it runs.
+  // Scoped to SEARCH/CURATED only — a USER_ADDED resource is never touched by a refresh.
   await prisma.learningResource.deleteMany({
     where: { learningTopicId: topicId, discoveryMethod: { in: ["SEARCH", "CURATED"] } },
   });

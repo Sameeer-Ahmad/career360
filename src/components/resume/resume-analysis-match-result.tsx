@@ -51,12 +51,7 @@ const SUGGESTION_TYPE_LABELS = {
   MASTER_CONTENT: "From Master Resume",
 } as const;
 
-// Groups the flat suggestion list into the categories a user can review as
-// one complete plan, rather than one suggestion type at a time — see
-// SUGGESTION_TYPES for the underlying classification (ATS/Structure has its
-// own always-visible, deterministic card above and isn't repeated here;
-// "Cannot address without evidence" surfaces separately via the Requirement
-// match card's MISSING group).
+// ATS/Structure and MISSING-evidence suggestions are surfaced in their own cards above, not repeated here.
 const SUGGESTION_GROUPS: { type: SuggestionType; title: string; description: string }[] = [
   { type: "MASTER_CONTENT", title: "Add from Master Resume", description: "Relevant career content pulled in from your Master Resume." },
   { type: "BULLET", title: "Improve existing content", description: "Rewordings of bullets that already exist in this resume." },
@@ -78,12 +73,9 @@ function SuggestionCard({
   onChangeText: (text: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const canAutoApply =
-    suggestion.type === "BULLET"
-      ? suggestion.current !== null
-      : suggestion.type === "MASTER_CONTENT"
-        ? suggestion.masterExcerpt !== null
-        : true;
+  let canAutoApply = true;
+  if (suggestion.type === "BULLET") canAutoApply = suggestion.current !== null;
+  else if (suggestion.type === "MASTER_CONTENT") canAutoApply = suggestion.masterExcerpt !== null;
 
   return (
     <div

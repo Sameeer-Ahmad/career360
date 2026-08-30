@@ -7,13 +7,7 @@ export class NotFoundError extends Error {
   }
 }
 
-/**
- * Verifies the LearningTopic → LearningPath → userId ownership chain.
- * Throws NotFoundError for both "doesn't exist" and "belongs to someone
- * else" — the same check learning-resources.ts's getOwnedTopic performs,
- * duplicated locally rather than imported since this module has no other
- * reason to depend on the resources module.
- */
+/** Verifies the LearningTopic → LearningPath → userId ownership chain. Duplicated from learning-resources.ts's getOwnedTopic since this module otherwise has no reason to depend on it. */
 async function assertTopicOwnership(userId: string, topicId: string): Promise<void> {
   const topic = await prisma.learningTopic.findFirst({
     where: { id: topicId, learningPath: { userId } },
@@ -34,13 +28,7 @@ export async function getNote(userId: string, topicId: string): Promise<Learning
   return note;
 }
 
-/**
- * Ownership-checked upsert. Whitespace-only or empty content deletes the
- * underlying row instead of persisting an empty string — "no note" and
- * "cleared note" are the same state, so getNote's null response
- * unambiguously means "nothing to show." Returns the saved note, or null
- * when the content was empty and the row was deleted (or never existed).
- */
+/** Ownership-checked upsert. Empty/whitespace content deletes the row instead of persisting an empty string, so getNote's null response unambiguously means "nothing to show." */
 export async function saveNote(userId: string, topicId: string, content: string): Promise<LearningNoteData | null> {
   await assertTopicOwnership(userId, topicId);
 

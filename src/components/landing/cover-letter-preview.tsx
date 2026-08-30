@@ -7,9 +7,7 @@ const INPUT_CHIPS = [
   { icon: FileText, label: "Resume" },
 ];
 
-// Illustrative only — never a real user's letter. Deliberately generic and
-// clearly a "draft" (ellipsis, muted styling) so it reads as UI preview
-// content, not a finished real cover letter.
+// Illustrative only — deliberately generic and styled as a "draft", not a real letter.
 const DRAFT_LINES = [
   "Dear Hiring Team,",
   "I'm writing to apply for the Frontend Engineer role at Acamae. My experience building React applications lines up closely with what this role needs…",

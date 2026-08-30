@@ -89,8 +89,10 @@ export function EventFormDialog(props: EventFormDialogProps) {
   const isPastStart =
     mode === "create" && Boolean(values.date) && Boolean(values.time) && !isFutureDateTime(parseLocalDateTime(values.date, values.time));
 
+  const canSubmit = !saving && !isPastStart && Boolean(values.title.trim()) && Boolean(values.date) && Boolean(values.time);
+
   async function submit() {
-    if (!values.title.trim() || !values.date || !values.time || saving || isPastStart) return;
+    if (!canSubmit) return;
     setSaving(true);
     setError(null);
     try {
@@ -99,23 +101,14 @@ export function EventFormDialog(props: EventFormDialogProps) {
 
       const url = props.mode === "create" ? "/api/calendar/events" : `/api/calendar/events/${props.initial.id}`;
       const method = mode === "create" ? "POST" : "PATCH";
-      const body =
-        mode === "create"
-          ? {
-              eventType: values.eventType,
-              title: values.title.trim(),
-              description: values.description.trim() || undefined,
-              startIso: start.toISOString(),
-              endIso: end.toISOString(),
-              reminderMinutes: values.reminderMinutes,
-            }
-          : {
-              title: values.title.trim(),
-              description: values.description.trim() || undefined,
-              startIso: start.toISOString(),
-              endIso: end.toISOString(),
-              reminderMinutes: values.reminderMinutes,
-            };
+      const body: Record<string, unknown> = {
+        title: values.title.trim(),
+        description: values.description.trim() || undefined,
+        startIso: start.toISOString(),
+        endIso: end.toISOString(),
+        reminderMinutes: values.reminderMinutes,
+      };
+      if (mode === "create") body.eventType = values.eventType;
 
       const response = await fetch(url, {
         method,
@@ -196,7 +189,7 @@ export function EventFormDialog(props: EventFormDialogProps) {
         )}
 
         <div className="flex items-center gap-2 pt-1">
-          <Button type="button" onClick={submit} disabled={saving || !values.title.trim() || !values.date || !values.time || isPastStart}>
+          <Button type="button" onClick={submit} disabled={!canSubmit}>
             {saving ? "Saving…" : mode === "create" ? "Add Event" : "Save Changes"}
           </Button>
           <Button type="button" variant="outline" onClick={onClose} disabled={saving}>

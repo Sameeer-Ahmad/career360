@@ -17,15 +17,8 @@ import {
   type ResumeStructureScore,
 } from "@/lib/resume/ats-scoring";
 
-// ---------------------------------------------------------------------------
-// Resume-only readiness (no JD) — fully deterministic, no Gemini call.
-// This intentionally does not call the AI: without a target job there is no
-// clear "keyword" to check against, and structural readiness signals are
-// things Career360's own heuristics can check reliably and for free. Scored
-// on the Main Resume alone — the Master Resume is a reference library, not
-// what would actually be submitted, so it shouldn't affect this score.
-// ---------------------------------------------------------------------------
-
+// Resume-only readiness (no JD) — fully deterministic, no Gemini call. Scored on the Main Resume alone;
+// the Master Resume is a reference library, not what would actually be submitted, so it doesn't factor in.
 export type ResumeReadiness = ResumeStructureScore;
 
 export function analyzeResumeReadiness(content: string): ResumeReadiness {
@@ -64,26 +57,16 @@ export type ResumeSuggestion = {
   rationale: string;
 };
 
-// ---------------------------------------------------------------------------
-// Tailoring session context — lets the client carry a bounded, best-result-
-// preserving tailoring session across multiple analyses without any server-
-// side session storage: the client sends back what happened in earlier
-// rounds, and this module folds it into the next prompt / suggestion filter.
-// ---------------------------------------------------------------------------
+// Tailoring session context — no server-side session storage; the client sends back what happened in
+// earlier rounds, and this module folds it into the next prompt / suggestion filter.
 
 /** Normalizes text for stable comparison across rounds — not a cryptographic hash, just whitespace/case-insensitive identity. */
 export function fingerprintExcerpt(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-/**
- * A stable identity for a suggestion across analysis rounds. MASTER_CONTENT
- * suggestions are fingerprinted by their verbatim excerpt (per-spec: "based
- * on the actual Master source content/excerpt", not the title, since titles
- * can vary between rounds); every other type falls back to type+title, which
- * is stable enough since those suggestions rewrite/reorder EXISTING resume
- * text rather than pulling in new source content.
- */
+// A stable identity for a suggestion across rounds. MASTER_CONTENT is fingerprinted by its verbatim excerpt
+// (titles can vary between rounds); every other type falls back to type+title.
 export function suggestionFingerprint(suggestion: {
   type: SuggestionType;
   title: string;
@@ -341,14 +324,8 @@ function asEvidenceSource(value: unknown): EvidenceSource | null {
   return (EVIDENCE_SOURCES as readonly string[]).includes(value as string) ? (value as EvidenceSource) : null;
 }
 
-/**
- * Defensively parses the client-supplied tailoring session fields (round
- * number + prior-round history) out of a resume-analysis request body.
- * Returns undefined for a first-pass (non-refinement) request or malformed
- * input — a missing/invalid session context just means "treat this as a
- * fresh, comprehensive analysis," never a hard error, since it's prompt
- * context, not something that needs to fail the request.
- */
+// Returns undefined for a first-pass request or malformed input — a missing/invalid session context
+// just means "treat this as a fresh, comprehensive analysis," never a hard error.
 export function parseSessionContext(raw: unknown): TailoringSessionContext | undefined {
   if (typeof raw !== "object" || raw === null) return undefined;
   const data = raw as Record<string, unknown>;
@@ -391,15 +368,8 @@ export function parseSessionContext(raw: unknown): TailoringSessionContext | und
   return { round, appliedSuggestions, rejectedSuggestions, remainingGaps };
 }
 
-/**
- * Parses and normalizes Gemini's raw JSON text into a safe ResumeJdMatch,
- * then computes the overall score ourselves (see ats-scoring.ts) — Gemini
- * only ever supplies qualitative classification, never the final number.
- * `masterResumeContent` (if a Master Resume was used) lets us verify
- * MASTER_CONTENT suggestions actually quote real Master Resume text before
- * treating them as auto-applicable. Throws MalformedAnalysisError if the
- * response isn't usable at all.
- */
+// Parses and normalizes Gemini's raw JSON into a safe ResumeJdMatch; the overall score is always computed
+// here (ats-scoring.ts), never by Gemini. Throws MalformedAnalysisError if the response isn't usable at all.
 export function parseResumeJdMatch(
   rawText: string,
   mainResumeContent: string,
@@ -462,12 +432,8 @@ export function parseResumeJdMatch(
         }))
     : [];
 
-  // Guardrail: a BULLET suggestion whose `current` text doesn't actually
-  // appear verbatim in the Main Resume, or a MASTER_CONTENT suggestion whose
-  // `masterExcerpt` doesn't actually appear verbatim in the Master Resume,
-  // can't be safely auto-applied and risks misrepresenting what's really
-  // there — drop the anchor (the UI then treats it as manual-review-only)
-  // rather than trusting it blindly.
+  // A suggestion whose current/masterExcerpt text doesn't actually appear verbatim in the source resume
+  // can't be safely auto-applied — drop the anchor so the UI treats it as manual-review-only.
   const anchoredSuggestions: ResumeSuggestion[] = suggestionsRaw.map((s) => {
     if (s.type === "BULLET" && s.current && !mainResumeContent.includes(s.current)) {
       return { ...s, current: null };
@@ -480,11 +446,8 @@ export function parseResumeJdMatch(
     return s;
   });
 
-  // Round-over-round dedup guardrails — deterministic, not just prompted:
-  // drop anything already applied in this session (by stable fingerprint),
-  // and drop any MASTER_CONTENT suggestion whose excerpt is already present
-  // verbatim in the current resume (whether via an earlier accepted
-  // suggestion or a manual edit) — it has nothing left to add.
+  // Deterministic round-over-round dedup: drop anything already applied this session, and drop any
+  // MASTER_CONTENT suggestion whose excerpt is already present verbatim in the current resume.
   const normalizedMain = fingerprintExcerpt(mainResumeContent);
   const suggestions: ResumeSuggestion[] = anchoredSuggestions.filter((s) => {
     if (excludeFingerprints?.has(suggestionFingerprint(s))) return false;

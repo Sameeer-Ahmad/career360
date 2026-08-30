@@ -110,12 +110,8 @@ export function CoverLetterPanel({
       const body = await response.json().catch(() => null);
 
       if (!response.ok) {
-        // A save failure is a transient, one-click-to-retry situation — a
-        // toast is enough. It deliberately does NOT set `error` here: that
-        // state also drives the ErrorState card below, whose Retry button
-        // re-runs `generate`, not `save` — reusing it for a save failure
-        // would show a "Retry" that regenerates the draft instead of
-        // re-saving it.
+        // Toast only, not `error` — that state drives the ErrorState card's
+        // Retry button, which re-runs `generate`, not `save`.
         toast.error(body?.error ?? "Couldn't save the cover letter. Please try again.");
         return;
       }
@@ -136,9 +132,7 @@ export function CoverLetterPanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Same reasoning as the save-failure path above — a toast avoids
-      // misusing the generate-only ErrorState/Retry block for an unrelated
-      // failure.
+      // Toast, not `error` — same reasoning as the save-failure path above.
       toast.error("Couldn't copy to the clipboard.");
     }
   }

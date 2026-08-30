@@ -24,10 +24,8 @@ export type NavSection = {
   items: NavItem[];
 };
 
-// Companies is deliberately not a primary nav destination — it's supporting
-// data for Applications (the Company model/relationship is untouched),
-// not something users manage as its own object. See /companies, left as
-// an unused route rather than removed.
+// Companies is deliberately not a nav destination — it's supporting data for
+// Applications, not something users manage on its own. /companies still exists, unlinked.
 export const NAV_SECTIONS: NavSection[] = [
   { items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }] },
   {

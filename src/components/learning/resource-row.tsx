@@ -82,7 +82,6 @@ function resourceMetaLine(resource: Resource): string {
   return LEARNING_RESOURCE_TYPE_LABELS[resource.type];
 }
 
-/** A single compact list row — no per-resource bordered card. Rows are separated with a divider on their container, not their own border. */
 export function ResourceRow({
   resource,
   onEdit,
@@ -94,14 +93,9 @@ export function ResourceRow({
 }) {
   const isUserAdded = resource.discoveryMethod === "USER_ADDED";
   const actionLabel = resource.provider === "YOUTUBE" ? "Watch" : "Open";
-  const Icon: LucideIcon =
-    resource.provider === "YOUTUBE"
-      ? resource.type === "PLAYLIST"
-        ? ListVideo
-        : Play
-      : resource.provider === "OFFICIAL_DOCS"
-        ? BookOpen
-        : RESOURCE_TYPE_ICON[resource.type];
+  let Icon: LucideIcon = RESOURCE_TYPE_ICON[resource.type];
+  if (resource.provider === "YOUTUBE") Icon = resource.type === "PLAYLIST" ? ListVideo : Play;
+  else if (resource.provider === "OFFICIAL_DOCS") Icon = BookOpen;
 
   return (
     <div className="flex items-center gap-3 py-2.5">
@@ -231,14 +225,8 @@ export function AddResourceForm({
 
 const COMPACT_RESOURCE_LIMIT = 4;
 
-/**
- * A single topic's Resources section, as shown inside its expanded row in
- * the Topics view. Fully controlled — reads from the shared
- * resourcesByTopic state (populated once via the path-level aggregate
- * fetch) and reports mutations back up to PathWorkspace rather than
- * fetching or storing anything itself. Shows the first 4 resources with an
- * inline "View all N" expansion — never navigates away.
- */
+// Reads from the shared resourcesByTopic state and reports mutations back up
+// to PathWorkspace rather than fetching or storing anything itself.
 export function TopicResourcesSection({
   state,
   loading,

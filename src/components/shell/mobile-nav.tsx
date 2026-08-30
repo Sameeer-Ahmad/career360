@@ -12,7 +12,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { SidebarNav } from "@/components/shell/sidebar-nav";
-import { UserProfile } from "@/components/shell/user-profile";
+import { UserProfile, type ShellUser } from "@/components/shell/user-profile";
 import { LogoutButton } from "@/components/shell/logout-button";
 import { Divider } from "@/components/ui/divider";
 import { IconButton } from "@/components/ui/icon-button";
@@ -30,9 +30,6 @@ export function MobileNavProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   // Close the drawer whenever the route changes (e.g. after tapping a nav link).
-  // This project's lint config forbids both the effect+setState pattern and the
-  // ref-during-render alternative React's docs otherwise recommend for this case,
-  // so an effect with a narrow, deliberate exception is the remaining option.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(false);
@@ -66,12 +63,6 @@ export function MobileNavTrigger() {
     </IconButton>
   );
 }
-
-type ShellUser = {
-  name?: string | null;
-  email?: string | null;
-  avatarUrl?: string | null;
-};
 
 export function MobileNavDrawer({ user }: { user: ShellUser }) {
   const { open, setOpen } = useMobileNav();

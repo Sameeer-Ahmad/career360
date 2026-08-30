@@ -3,15 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-/**
- * Fade+translate entrance the moment a section scrolls into view — a
- * small IntersectionObserver hook, not an animation library (there's
- * nothing here a library would meaningfully simplify). prefers-reduced-
- * motion is handled globally (globals.css forces ~0ms transition/animation
- * duration everywhere), so this component doesn't need its own
- * motion-reduce branching — content still becomes visible, just without
- * the animated transition.
- */
+// Fade+translate entrance on scroll into view via IntersectionObserver.
+// prefers-reduced-motion is handled globally (globals.css), so no branching needed here.
 const VARIANT_CLASSES = {
   fade: { hidden: "translate-y-6 opacity-0", visible: "translate-y-0 opacity-100" },
   "grow-x": { hidden: "scale-x-0 opacity-0 origin-left", visible: "scale-x-100 opacity-100 origin-left" },

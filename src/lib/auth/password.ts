@@ -1,7 +1,5 @@
-// scrypt-based password hashing using Node's built-in crypto module —
-// deliberately no new dependency (bcrypt/argon2) for a single hash/verify
-// pair. This is the pattern Node's own crypto docs recommend for password
-// storage. Stored format: "<saltHex>:<derivedKeyHex>".
+// scrypt-based hashing via Node's built-in crypto — avoids adding bcrypt/argon2
+// for a single hash/verify pair. Stored format: "<saltHex>:<derivedKeyHex>".
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 

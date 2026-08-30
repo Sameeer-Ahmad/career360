@@ -23,9 +23,7 @@ export default async function JobAnalysisPage({
   let applicationContext: JobAnalysisApplicationContext | undefined;
   if (applicationId !== null) {
     try {
-      // Re-verifies ownership here too (in addition to the API route) so we only
-      // ever show application context — including its job description — for
-      // applications this user actually owns.
+      // Re-checked here too (not just the API route) so job description context is only ever shown to its owner.
       const application = await getApplication(session.user.id, applicationId);
       if (application.jobDescription?.trim()) {
         applicationContext = {

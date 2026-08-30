@@ -105,18 +105,17 @@ function toRequestBody(values: FormValues) {
   };
 }
 
-export function ApplicationForm({
-  mode,
-  applicationId,
-  initialValues,
-}: {
-  mode: "create" | "edit";
-  applicationId?: string;
-  initialValues?: ApplicationFormInitialValues;
-}) {
+type ApplicationFormProps =
+  | { mode: "create" }
+  | { mode: "edit"; applicationId: string; initialValues: ApplicationFormInitialValues };
+
+export function ApplicationForm(props: ApplicationFormProps) {
+  const { mode } = props;
   const router = useRouter();
   const toast = useToast();
-  const [values, setValues] = useState<FormValues>(() => toFormValues(initialValues));
+  const [values, setValues] = useState<FormValues>(() =>
+    toFormValues(props.mode === "edit" ? props.initialValues : undefined),
+  );
   const [issues, setIssues] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -137,7 +136,7 @@ export function ApplicationForm({
     setIssues([]);
     setSubmitting(true);
     try {
-      const url = mode === "create" ? "/api/applications" : `/api/applications/${applicationId}`;
+      const url = props.mode === "create" ? "/api/applications" : `/api/applications/${props.applicationId}`;
       const method = mode === "create" ? "POST" : "PATCH";
       const response = await fetch(url, {
         method,

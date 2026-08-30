@@ -32,12 +32,7 @@ import {
   type TopicResourceState,
 } from "@/components/learning/learning-types";
 
-// ---------------------------------------------------------------------------
-// Progress — explicit, user-controlled, unrestricted transitions between
-// the three states (mirrors ApplicationStatus's own unguarded-transition
-// convention elsewhere in this codebase).
-// ---------------------------------------------------------------------------
-
+// Unrestricted transitions between states, same convention as ApplicationStatus.
 function TopicProgress({
   topicId,
   status,
@@ -108,12 +103,7 @@ function TopicProgress({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Topic detail — a single workspace section, NOT nested cards. Sections
-// (why it matters, progress, notes, resources) are separated by dividers
-// and typography, not by boxes within boxes.
-// ---------------------------------------------------------------------------
-
+// Sections are separated by dividers and typography, not nested cards.
 function TopicDetail({
   topic,
   resourceState,
@@ -187,11 +177,6 @@ function TopicDetail({
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Topics view — numbered, collapsed by default. Expanding a topic reveals
-// a single workspace section (TopicDetail), not nested cards.
-// ---------------------------------------------------------------------------
 
 function TopicRow({
   index,

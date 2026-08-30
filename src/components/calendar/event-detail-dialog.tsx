@@ -17,11 +17,8 @@ import {
   REMINDER_OPTIONS,
 } from "@/lib/google-calendar/mapping";
 
-// ---------------------------------------------------------------------------
-// Event detail dialog — the primary way to inspect/edit/delete an event.
-// "Open in Google Calendar" is present only as a secondary, optional link.
-// ---------------------------------------------------------------------------
-
+// The primary way to inspect/edit/delete an event. "Open in Google
+// Calendar" is present only as a secondary, optional link.
 export function EventDetailDialog({
   eventId,
   onClose,

@@ -84,11 +84,7 @@ export function buildCoverLetterPrompt(input: {
   ].join("\n\n");
 }
 
-/**
- * Parses and normalizes Gemini's raw JSON text into the cover letter string.
- * Throws MalformedCoverLetterError if the response isn't usable — never
- * surfaces raw/partial JSON to the user.
- */
+/** Parses Gemini's raw JSON reply; throws MalformedCoverLetterError rather than surfacing raw/partial JSON. */
 export function parseCoverLetterReply(rawText: string): string {
   let raw: unknown;
   try {
@@ -113,12 +109,8 @@ export function parseCoverLetterReply(rawText: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Generates a cover letter draft for one application, grounded in one of
- * the user's own resume documents. Both the application and the document
- * are independently ownership-checked (via getApplication/getDocument) —
- * neither id is trusted from the caller beyond that check, so a foreign
- * applicationId or documentId can never be used here even if guessed.
- * Nothing is persisted — see saveCoverLetterForApplication for that.
+ * Generates a draft grounded in one of the user's own resumes. Both the
+ * application and document are independently ownership-checked below.
  */
 export async function generateCoverLetterDraft(
   userId: string,
@@ -154,10 +146,8 @@ export async function generateCoverLetterDraft(
 }
 
 // ---------------------------------------------------------------------------
-// Persistence — reuses the existing Document model (DocumentType.COVER_LETTER
-// already exists in the schema) rather than introducing a second document
-// system. A cover letter is scoped to its application the same way tailored
-// resumes are: userId + applicationId on the Document row.
+// Persistence — reuses the existing Document model (DocumentType.COVER_LETTER)
+// rather than introducing a second document system.
 // ---------------------------------------------------------------------------
 
 export function validateCoverLetterContent(input: unknown): string {
@@ -176,13 +166,7 @@ function defaultCoverLetterTitle(companyName: string, jobTitle: string): string 
   return title.length > MAX_TITLE_LENGTH ? title.slice(0, MAX_TITLE_LENGTH) : title;
 }
 
-/**
- * Saves (or updates) the ONE cover letter for this application — at most a
- * single COVER_LETTER document exists per (user, application) pair. Calling
- * this again after editing or regenerating updates that same document
- * rather than creating a new one each time, so repeated saves/regenerates
- * never leave behind uncontrolled duplicate records.
- */
+/** Saves (or updates) the one cover letter per (user, application) pair — never creates a duplicate. */
 export async function saveCoverLetterForApplication(
   userId: string,
   applicationId: string,
@@ -217,13 +201,7 @@ export async function saveCoverLetterForApplication(
   });
 }
 
-/**
- * The saved cover letter for this application, if any. Scoped to userId
- * directly (not just the applicationId ownership check above it) — mirrors
- * listDocumentsForApplication's defense-in-depth, so a foreign applicationId
- * can never surface another user's document even if the ownership check
- * above were ever removed or bypassed.
- */
+/** The saved cover letter for this application, if any. Scoped to userId directly as defense-in-depth. */
 export async function getCoverLetterForApplication(userId: string, applicationId: string) {
   await getApplication(userId, applicationId);
   return prisma.document.findFirst({

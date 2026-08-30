@@ -28,17 +28,7 @@ function computeProgressSummary(topics: { progress: { status: string } | null }[
   return { completed, total, percentage };
 }
 
-/**
- * Explicitly deletes every dependent collection for a set of LearningTopic
- * ids, in the correct order (children of children first), before the
- * topics themselves are deleted by the caller. Never relies on the
- * schema's declared onDelete: Cascade actually firing at runtime — same
- * defensive convention already used throughout this file and for
- * Document's self-relations. Shared by deleteLearningPath and
- * replaceExistingRecommendedPath so both paths clean up LearningResource,
- * LearningNote, and LearningProgress identically; a no-op for an empty
- * topicIds array.
- */
+/** Deletes every dependent row (notes, progress, resources) for a set of topic ids before the caller deletes the topics themselves — Mongo doesn't enforce onDelete: Cascade, so this must be explicit. No-op for an empty array. */
 async function deleteTopicsAndDependents(topicIds: string[]): Promise<void> {
   if (topicIds.length === 0) return;
   await prisma.learningNote.deleteMany({ where: { learningTopicId: { in: topicIds } } });
@@ -47,19 +37,9 @@ async function deleteTopicsAndDependents(topicIds: string[]): Promise<void> {
   await prisma.learningTopic.deleteMany({ where: { id: { in: topicIds } } });
 }
 
-/**
- * Saves a validated learning path (personal or AI-generated-and-reviewed).
- * Ownership of `applicationId` (if given) is verified before anything is
- * written. When source is RECOMMENDED and an applicationId is given, any
- * existing RECOMMENDED path for that same application is replaced — its
- * topics deleted, then the path itself — before the new one is created.
- * APPLICATION and PERSONAL paths are never replaced this way.
- */
+/** Verifies `applicationId` ownership before writing. If source is RECOMMENDED, replaces any existing RECOMMENDED path for that application first — APPLICATION and PERSONAL paths are never replaced this way. */
 export async function createLearningPath(userId: string, input: SaveLearningPathInput) {
-  // Deliberately NOT translated into this module's own NotFoundError — the
-  // caller needs to be able to tell "no such application" (this) apart
-  // from "no such learning path" (thrown elsewhere in this file), so
-  // applications.ts's NotFoundError propagates as-is.
+  // Propagates applications.ts's NotFoundError as-is so callers can tell "no such application" apart from "no such learning path".
   if (input.applicationId) {
     await assertApplicationOwnership(userId, input.applicationId);
   }
@@ -94,12 +74,7 @@ export async function createLearningPath(userId: string, input: SaveLearningPath
   return getLearningPathDetail(userId, path.id);
 }
 
-/**
- * Deletes any existing RECOMMENDED path for this user+application — its
- * topics and every dependent (resources, notes, progress) first, then the
- * path itself — so the new RECOMMENDED path always starts completely
- * clean. Never touches APPLICATION or PERSONAL paths.
- */
+/** Deletes any existing RECOMMENDED path for this user+application (and its dependents) so a regenerated path starts clean. Never touches APPLICATION or PERSONAL paths. */
 async function replaceExistingRecommendedPath(userId: string, applicationId: string): Promise<void> {
   const existing = await prisma.learningPath.findFirst({
     where: { userId, applicationId, source: "RECOMMENDED" },
@@ -131,13 +106,7 @@ export async function listLearningPaths(userId: string, filters: LearningPathLis
   });
 }
 
-/**
- * Ownership-checked — throws NotFoundError for both "doesn't exist" and
- * "belongs to someone else." Includes each topic's progress (cheap, always
- * relevant the instant a path is opened) and a computed progressSummary —
- * notes are deliberately NOT included here, they're lazy-loaded per-topic
- * only when that topic's Notes section is opened (see /api/learning/topics/[id]/notes).
- */
+/** Ownership-checked. Includes each topic's progress and a computed progressSummary; notes are lazy-loaded per-topic instead (see /api/learning/topics/[id]/notes). */
 export async function getLearningPathDetail(userId: string, id: string) {
   const path = await prisma.learningPath.findFirst({
     where: { id, userId },
@@ -199,15 +168,7 @@ function validateAddPersonalTopicInput(body: unknown): AddPersonalTopicInput {
   };
 }
 
-/**
- * Adds a single manually-entered topic to an existing PERSONAL path the
- * user owns, appended after the path's current topics. Throws
- * NotFoundError if the path doesn't exist/isn't owned, NotPersonalPathError
- * if it exists but isn't a PERSONAL path. No AI call — topic/goal/
- * priority/levels are exactly what the caller provides, with the same
- * PERSONAL defaults (reason -> "Added by you.", priority -> MEDIUM) that
- * validateSaveInput already applies for personal paths created at once.
- */
+/** Adds a manually-entered topic to an existing PERSONAL path the user owns, appended after its current topics. Throws NotFoundError (not found/owned) or NotPersonalPathError (not a PERSONAL path). No AI call. */
 export async function addPersonalTopic(userId: string, pathId: string, body: unknown) {
   const path = await prisma.learningPath.findFirst({
     where: { id: pathId, userId },
@@ -233,22 +194,11 @@ export async function addPersonalTopic(userId: string, pathId: string, body: unk
 }
 
 // ---------------------------------------------------------------------------
-// Path-level aggregation — Resources and Notes across every topic in a
-// path, in one query each (not one request per topic). Read-only: all
-// mutations still go through the existing per-topic endpoints
-// (/api/learning/topics/[id]/resources, /notes); these just power the
-// Learning Path workspace's Resources/Notes/Overview views without forcing
-// the client to fetch per-topic. Never calls YouTube — reads whatever is
-// already cached, exactly like the per-topic resources GET.
+// Path-level aggregation — Resources/Notes across every topic, one query
+// each. Read-only; mutations go through the per-topic endpoints. Never calls YouTube.
 // ---------------------------------------------------------------------------
 
-/**
- * Ownership-checked. Returns every topic's resources, grouped by topic,
- * with the same fetchedAt/stale freshness computation the per-topic
- * endpoint uses (discovered — non-USER_ADDED — rows only; a user-added
- * resource never affects freshness). One Prisma query (topics + their
- * resources, batched — not N+1).
- */
+/** Ownership-checked. Returns every topic's resources grouped by topic, with the same fetchedAt/stale computation as the per-topic endpoint (one batched query, not N+1). */
 export async function getPathResources(userId: string, pathId: string) {
   const path = await prisma.learningPath.findFirst({
     where: { id: pathId, userId },
@@ -277,14 +227,7 @@ export async function getPathResources(userId: string, pathId: string) {
   });
 }
 
-/**
- * Ownership-checked. Returns only topics that actually have a note
- * (empty/never-written notes are excluded, not returned as empty
- * strings) — one Prisma query, not one per topic. The per-topic note
- * *editing* UI still uses the existing single-topic GET/PUT endpoints and
- * its own lazy-load — this is a separate, read-only aggregate solely for
- * the Learning Path workspace's Notes view.
- */
+/** Ownership-checked. Returns only topics that actually have a note, in one query. Editing still goes through the per-topic GET/PUT endpoints — this is read-only aggregation for the workspace's Notes view. */
 export async function getPathNotes(userId: string, pathId: string) {
   const path = await prisma.learningPath.findFirst({
     where: { id: pathId, userId },

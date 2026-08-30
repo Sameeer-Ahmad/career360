@@ -13,10 +13,7 @@ import {
   type WeekdayCode,
 } from "@/lib/google-calendar/mapping";
 
-// A month/week view never needs more than a bounded window — never
-// unbounded historical data, never called on a polling loop (only when
-// the user actually navigates).
-const MAX_RANGE_DAYS = 62;
+const MAX_RANGE_DAYS = 62; // a month/week view never needs more than a bounded window
 
 /** Powers the Career360 Calendar UI's month/week views — pass explicit timeMin/timeMax for the visible range. */
 export async function GET(request: NextRequest) {
@@ -84,10 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "reminderMinutes must be an array of minute values" }, { status: 400 });
   }
 
-  // Data-integrity check, not a security boundary (Calendar events are
-  // always scoped to the requesting user's own primary calendar regardless
-  // of this tag) — still, an applicationId/learningPathId attached to an
-  // event must genuinely belong to the requesting user.
+  // Data-integrity check: an applicationId/learningPathId attached to an event must genuinely belong to this user.
   if (body.applicationId) {
     if (!isValidObjectId(body.applicationId)) {
       return NextResponse.json({ error: "Invalid applicationId" }, { status: 400 });

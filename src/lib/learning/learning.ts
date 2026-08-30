@@ -5,9 +5,9 @@ import {
   type EmploymentType,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { NotFoundError as ApplicationNotFoundError } from "@/lib/applications/applications";
-export { ApplicationNotFoundError };
 import { EMPLOYMENT_TYPE_LABELS } from "@/lib/format";
+
+export { NotFoundError as ApplicationNotFoundError } from "@/lib/applications/applications";
 
 export {
   addPersonalTopic,
@@ -156,12 +156,7 @@ function formatApplicationContextBlock(context: LearningApplicationContext): str
   return `Job description (belongs to the authenticated user's tracked application, verified):\n${lines.join("\n")}`;
 }
 
-/**
- * Builds the generation prompt. Application-scoped when `applicationContext`
- * is given (prioritize the actual JD); general otherwise (reason from the
- * resume/profile alone — no application or JD required). Master Resume is
- * always optional in either mode.
- */
+/** Application-scoped when `applicationContext` is given (prioritizes the JD); general otherwise. Master Resume is always optional. */
 export function buildLearningPrompt(
   mainResumeContent: string,
   masterResumeContent?: string,
@@ -214,10 +209,7 @@ function asStringArray(value: unknown): string[] {
 }
 
 const MIN_REASON_LENGTH = 10;
-// A narrow, best-effort blocklist — not an attempt at general semantic
-// quality validation, which would be too easy to false-positive on. Just
-// catches the specific kind of generic filler the system instruction
-// explicitly forbids.
+// Best-effort blocklist for the generic filler phrases the system instruction forbids — not general quality validation.
 const GENERIC_REASON_PHRASES = new Set([
   "this is important for your career",
   "this will help your career",
@@ -231,22 +223,13 @@ const GENERIC_REASON_PHRASES = new Set([
 function isGroundedReason(reason: string): boolean {
   const trimmed = reason.trim();
   if (trimmed.length < MIN_REASON_LENGTH) return false;
-  // Strip trailing punctuation before the blocklist check so "This is
-  // important for your career." still matches the un-punctuated phrase.
+  // Strip trailing punctuation so "...career." still matches the blocklist.
   const normalized = trimmed.toLowerCase().replace(/[.!?]+$/, "");
   if (GENERIC_REASON_PHRASES.has(normalized)) return false;
   return true;
 }
 
-/**
- * Normalizes a raw `topics` array (from either a fresh Groq response or a
- * client-submitted preview being re-validated) into safe topics — dropping
- * (not defaulting) any item missing a real topic name or a grounded reason,
- * since those are the two fields nothing can safely default. Deduplicates
- * by normalized topic name (first occurrence wins) and caps at MAX_TOPICS.
- * Shared by parseLearningPlan and the save-path re-validation so both go
- * through the exact same rules.
- */
+/** Drops any item missing a real topic name or grounded reason (nothing safe to default), dedupes by topic name, and caps at MAX_TOPICS. Shared by parseLearningPlan and save-path re-validation. */
 function normalizeTopics(rawTopics: unknown): GeneratedLearningTopic[] {
   if (!Array.isArray(rawTopics)) return [];
 
@@ -282,13 +265,7 @@ function normalizeTopics(rawTopics: unknown): GeneratedLearningTopic[] {
   return topics;
 }
 
-/**
- * Parses and normalizes Groq's raw JSON text into a safe GeneratedLearningPlan.
- * Never trusts the raw response — every field is coerced/defaulted or the
- * containing item is dropped. Throws MalformedLearningPlanError only when
- * the response isn't usable at all (not valid JSON, or zero topics survive
- * normalization).
- */
+/** Never trusts Groq's raw response — every field is coerced/defaulted or dropped. Throws MalformedLearningPlanError only if the JSON is invalid or zero topics survive normalization. */
 export function parseLearningPlan(rawText: string): GeneratedLearningPlan {
   let raw: unknown;
   try {
@@ -321,14 +298,7 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-/**
- * Validates a POST /api/learning body — used for BOTH saving a reviewed AI
- * preview and creating a personal path from scratch. Never trusts a
- * client-submitted preview as-is: every topic goes back through the exact
- * same normalizeTopics() rules parseLearningPlan uses, so a tampered or
- * stale preview can't sneak in an invalid shape. Personal topics may omit
- * reason/priority (no AI was involved) — sensible defaults are applied.
- */
+/** Validates a POST /api/learning body — used for both saving a reviewed AI preview and creating a personal path. Every topic is re-validated through the same normalizeTopics() rules so a tampered preview can't sneak in an invalid shape. */
 export function validateSaveInput(body: unknown): SaveLearningPathInput {
   if (typeof body !== "object" || body === null) {
     throw new ValidationError(["Request body must be a JSON object"]);
@@ -392,12 +362,7 @@ export function validateSaveInput(body: unknown): SaveLearningPathInput {
 // Resume context gathering (for generation)
 // ---------------------------------------------------------------------------
 
-/**
- * The user's most-recently-updated standalone Main Resume (required for
- * generation) and Master Resume (optional), if any. A user can in principle
- * have more than one document tagged MAIN — the most recently updated one
- * is used, matching the ordering listResumeWorkspace already applies.
- */
+/** The user's most-recently-updated Main Resume (required for generation) and Master Resume (optional). A user can have more than one MAIN-tagged document; the most recent one wins. */
 export async function getPrimaryResumeContent(
   userId: string,
 ): Promise<{ main: { id: string; content: string } | null; master: { id: string; content: string } | null }> {

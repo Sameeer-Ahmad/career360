@@ -1,0 +1,128 @@
+{
+  "generatedAt": "2026-08-23T18:52:03.553Z",
+  "prismaVersion": "6.19.3",
+  "database": "career360_migration_scratch",
+  "results": [
+    {
+      "name": "User -> Account cascade",
+      "description": "onDelete: Cascade declared on Account.user.",
+      "actualBehavior": "Account was deleted automatically — Prisma cascade emulation worked for this cross-model relation.",
+      "appLevelHandlingRequired": false,
+      "detail": {
+        "userId": "6a8b415335979f3d36d01f10",
+        "accountId": "6a8b415335979f3d36d01f11",
+        "outcome": {
+          "threw": false,
+          "code": null,
+          "message": null
+        }
+      }
+    },
+    {
+      "name": "User -> Session cascade",
+      "description": "onDelete: Cascade declared on Session.user.",
+      "actualBehavior": "Session was deleted automatically — Prisma cascade emulation worked for this cross-model relation.",
+      "appLevelHandlingRequired": false,
+      "detail": {
+        "userId": "6a8b415335979f3d36d01f12",
+        "sessionId": "6a8b415335979f3d36d01f13",
+        "outcome": {
+          "threw": false,
+          "code": null,
+          "message": null
+        }
+      }
+    },
+    {
+      "name": "User -> Document cascade",
+      "description": "onDelete: Cascade declared on Document.user.",
+      "actualBehavior": "Document was deleted automatically — Prisma cascade emulation worked for this cross-model relation.",
+      "appLevelHandlingRequired": false,
+      "detail": {
+        "userId": "6a8b415335979f3d36d01f14",
+        "documentId": "6a8b415335979f3d36d01f15",
+        "outcome": {
+          "threw": false,
+          "code": null,
+          "message": null
+        }
+      }
+    },
+    {
+      "name": "Company -> Application Restrict",
+      "description": "onDelete: Restrict declared on Application.company.",
+      "actualBehavior": "Delete was BLOCKED as expected (P2014: The change you are trying to make would violate the required relation 'ApplicationToCompany' between the `Application` and `Company` models.) — Restrict emulation worked.",
+      "appLevelHandlingRequired": false,
+      "detail": {
+        "companyId": "6a8b415335979f3d36d01f17",
+        "applicationId": "6a8b415335979f3d36d01f18",
+        "outcome": {
+          "threw": true,
+          "code": "P2014",
+          "message": "The change you are trying to make would violate the required relation 'ApplicationToCompany' between the `Application` and `Company` models."
+        },
+        "companyStillExists": true,
+        "applicationStillExists": true
+      }
+    },
+    {
+      "name": "Document.sourceDocument self-relation Cascade",
+      "description": "MySQL cascades: deleting a source resume deletes its tailored versions. Schema declares onDelete: NoAction here (Prisma REQUIRES NoAction for self-relations on MongoDB — confirmed at schema-validation time).",
+      "actualBehavior": "Delete of the source document was BLOCKED outright (P2014: The change you are trying to make would violate the required relation 'DocumentVersions' between the `Document` and `Document` models.) while a tailored version still references it — Prisma refuses the delete rather than leaving a dangling reference.",
+      "appLevelHandlingRequired": true,
+      "detail": {
+        "sourceId": "6a8b415335979f3d36d01f1a",
+        "tailoredId": "6a8b415335979f3d36d01f1b",
+        "outcome": {
+          "threw": true,
+          "code": "P2014",
+          "message": "The change you are trying to make would violate the required relation 'DocumentVersions' between the `Document` and `Document` models."
+        },
+        "sourceStillExists": true,
+        "tailoredStillExists": true,
+        "tailoredSourceDocumentIdAfter": "6a8b415335979f3d36d01f1a"
+      }
+    },
+    {
+      "name": "Document.masterDocument self-relation SetNull",
+      "description": "MySQL sets masterDocumentId to null when the referenced Master is deleted. Schema declares onDelete: NoAction here (Prisma REQUIRES NoAction for self-relations on MongoDB — confirmed at schema-validation time).",
+      "actualBehavior": "Delete of the master document was BLOCKED outright (P2014: The change you are trying to make would violate the required relation 'DocumentMasterReference' between the `Document` and `Document` models.) while a tailored version still references it.",
+      "appLevelHandlingRequired": true,
+      "detail": {
+        "masterId": "6a8b415335979f3d36d01f1d",
+        "tailoredId": "6a8b415335979f3d36d01f1e",
+        "outcome": {
+          "threw": true,
+          "code": "P2014",
+          "message": "The change you are trying to make would violate the required relation 'DocumentMasterReference' between the `Document` and `Document` models."
+        },
+        "masterStillExists": true,
+        "tailoredMasterDocumentIdAfter": "6a8b415335979f3d36d01f1d"
+      }
+    },
+    {
+      "name": "Document.application SetNull",
+      "description": "Not a self-relation (Application is a different model from Document) — onDelete: SetNull IS schema-declarable here.",
+      "actualBehavior": "applicationId WAS nulled automatically — Prisma SetNull emulation worked for this cross-model relation.",
+      "appLevelHandlingRequired": false,
+      "detail": {
+        "applicationId": "6a8b415335979f3d36d01f21",
+        "documentId": "6a8b415335979f3d36d01f22",
+        "outcome": {
+          "threw": false,
+          "code": null,
+          "message": null
+        },
+        "documentApplicationIdAfter": null
+      }
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "autoHandledByPrisma": 5,
+    "requiresApplicationLevelHandling": [
+      "Document.sourceDocument self-relation Cascade",
+      "Document.masterDocument self-relation SetNull"
+    ]
+  }
+}

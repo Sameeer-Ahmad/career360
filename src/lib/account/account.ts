@@ -76,15 +76,9 @@ export async function changePassword(userId: string, body: unknown) {
   await prisma.user.update({ where: { id: userId }, data: { password: passwordHash } });
 }
 
-/**
- * Deletes the account and everything it owns. Relies on the schema's own
- * `onDelete: Cascade` declarations (Account, Session, Application,
- * Document, LearningPath → LearningTopic → progress/notes/resources,
- * GoogleCalendarConnection) — Prisma's MongoDB connector emulates these in
- * a transaction, so one call here removes the full graph. Company rows are
- * untouched: they're shared, not user-owned, and Application's own
- * relation to Company is Restrict, not Cascade.
- */
+// Relies on the schema's `onDelete: Cascade` declarations to remove everything
+// the user owns in one transaction. Company rows are untouched — they're
+// shared, not user-owned, and Application's relation to Company is Restrict.
 export async function deleteAccount(userId: string): Promise<void> {
   await prisma.user.delete({ where: { id: userId } });
 }

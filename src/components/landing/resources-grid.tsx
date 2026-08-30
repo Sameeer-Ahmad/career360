@@ -6,20 +6,9 @@ import { Reveal } from "@/components/landing/reveal";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 
-// Practical, generic guidance per topic, each tied to the real Career360
-// feature that helps with it — never a claim about a feature that doesn't
-// exist (no credits, no browser extension, no invented capabilities).
-// Owned by this client component (not passed in as a prop) because a
-// Server Component can't pass icon component references across the
-// server/client boundary.
-//
-// `group` is the broader, user-oriented filter category shown in the pill
-// bar — deliberately separate from `title` (the specific card heading) so
-// several feature-based cards can share one filter without merging their
-// content: several single-card categories made the old per-feature filter
-// bar feel fragmented, so cards are now grouped by what the user is trying
-// to do (Applying / Understanding the Role / Preparing) rather than by
-// which Career360 feature covers them.
+// Each card ties to a real Career360 feature — no invented capabilities.
+// `group` is the user-facing filter category (Applying/Understanding the
+// Role/Preparing), kept separate from `title` so several cards can share one filter.
 const RESOURCE_CATEGORIES = [
   {
     icon: FileText,

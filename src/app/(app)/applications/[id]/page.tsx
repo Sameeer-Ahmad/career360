@@ -32,7 +32,7 @@ import { ApplicationInterviewsTab } from "@/components/applications/application-
 import type { FollowUpItem } from "@/components/applications/application-follow-ups";
 import { EMPLOYMENT_TYPE_LABELS, formatDate, formatDateTime, formatSalaryRange } from "@/lib/format";
 
-/** The single soonest still-upcoming interview or follow-up for this application — computed from data the page already loaded (no extra Calendar call). Purely a display convenience; the Interviews & Follow-ups tab remains the source of truth. */
+/** Soonest still-upcoming interview or follow-up, for the "Next up" summary — a display convenience only. */
 function computeNextUp(
   interviewAt: Date | null,
   followUps: FollowUpItem[],
@@ -68,10 +68,8 @@ export default async function ApplicationDetailsPage({
 
   let application;
   try {
-    // idParam may be a raw ObjectId (old/bookmarked links) or the
-    // professional <company>-<job-title>-<shortId> slug — either way this
-    // resolves to the real id scoped to the requesting user's own
-    // applications, then getApplication re-verifies ownership itself.
+    // idParam may be a raw ObjectId (old/bookmarked links) or a slug — either way
+    // this resolves it to the real id scoped to the requesting user's applications.
     const id = await resolveApplicationId(userId, idParam);
     application = await getApplication(userId, id);
   } catch (error) {
@@ -85,28 +83,23 @@ export default async function ApplicationDetailsPage({
 
   const calendarConnected = await isCalendarConnected(userId);
   let initialInterviewEvent: { id: string; title: string; start: string | null } | null = null;
+  // A transient Calendar lookup failure shouldn't block the page from rendering —
+  // both fall back to their empty state, and the UI lets the user try again.
   if (calendarConnected && application.interviewAt) {
     try {
-      // A transient Calendar lookup failure shouldn't block the whole page
-      // from rendering — GoogleCalendarNotConnectedError (a revoked
-      // connection discovered mid-lookup) and any other failure both just
-      // fall back to "not yet added"; the button lets the user try again.
       const existing = await findExistingEvent(userId, {
         eventType: "INTERVIEW",
         applicationId: application.id,
       });
       if (existing) initialInterviewEvent = { id: existing.id, title: existing.title, start: existing.start };
     } catch {
-      // Fall back to "not yet added" — see comment above.
+      // fall back to "not yet added"
     }
   }
 
   let initialFollowUps: FollowUpItem[] = [];
   if (calendarConnected) {
     try {
-      // Same non-fatal fallback as the interview lookup above — a
-      // transient Calendar failure shows an empty list (with the option
-      // to add one) rather than breaking the page.
       const events = await findEventsForApplication(userId, application.id, "FOLLOW_UP");
       initialFollowUps = events.map((event) => ({
         id: event.id,
@@ -116,20 +109,14 @@ export default async function ApplicationDetailsPage({
         reminderMinutes: event.reminderMinutes,
       }));
     } catch {
-      // Fall back to an empty list — see comment above.
+      // fall back to an empty list
     }
   }
 
-  // The form already trims on save, but writes via the API directly (not
-  // through the form) don't — trim here too so a whitespace-only value
-  // can never render as a link.
+  // Writes via the API directly (not through the form) don't trim on save.
   const jobUrl = application.jobUrl?.trim() || null;
   const hasJobDescription = Boolean(application.jobDescription?.trim());
 
-  // Application Detail is the workspace for this one application — it
-  // already links OUT to Documents/Learning; these two also show what
-  // already links BACK to it, using the existing Application <->
-  // Document/LearningPath relationships (no new model, no new relation).
   const [applicationDocuments, applicationLearningPaths] = await Promise.all([
     listDocumentsForApplication(userId, application.id),
     listLearningPaths(userId, { applicationId: application.id }),
@@ -138,10 +125,7 @@ export default async function ApplicationDetailsPage({
   const resumeDocuments = applicationDocuments.filter((doc) => doc.type === "RESUME");
   const coverLetterDocuments = applicationDocuments.filter((doc) => doc.type === "COVER_LETTER");
 
-  // Typically 0-1 paths per application (RECOMMENDED paths replace their
-  // predecessor on regeneration) — cheap to fetch the full detail (which
-  // includes the already-computed progressSummary) for each rather than
-  // adding a new aggregate query.
+  // Typically 0-1 paths per application, so fetching full detail for each is cheap.
   const learningPathsWithProgress = await Promise.all(
     applicationLearningPaths.map((path) => getLearningPathDetail(userId, path.id)),
   );
@@ -180,10 +164,6 @@ export default async function ApplicationDetailsPage({
           Back to Applications
         </Link>
 
-        {/* Application Header — identity, status, and the two actions that
-            act on the application record itself. Feature-specific actions
-            (Analyze Job, Analyze Resume, Cover Letter, Recommend Learning)
-            now live next to the section they act on, below. */}
         <Card>
           <CardHeader className="flex-col items-start justify-between gap-4 sm:flex-row">
             <div>
@@ -206,14 +186,6 @@ export default async function ApplicationDetailsPage({
             </div>
           </CardHeader>
           <Divider />
-          {/* grid-cols-2 from the base (not sm:) — on mobile this metadata
-              was previously one long single-column stack (Location,
-              Employment type, Salary, Applied each on their own full-width
-              row), taking up a lot of vertical space before the user even
-              reaches the rest of the page. Two columns at every width below
-              lg halves that. Values wrap (no truncate) so a long salary
-              range or location never gets clipped at the narrower
-              half-width column. */}
           <CardContent className="grid grid-cols-2 gap-x-4 gap-y-4 pt-5 lg:grid-cols-4">
             {facts.map((fact) => (
               <div key={fact.label} className="flex items-start gap-2.5">
@@ -240,9 +212,6 @@ export default async function ApplicationDetailsPage({
           )}
         </Card>
 
-        {/* Next up — a one-line glance at the soonest upcoming interview or
-            follow-up, so "what do I need to do next" doesn't require
-            opening the Interviews & Follow-ups tab first. */}
         {nextUp && (
           <div className="flex items-center gap-2.5 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
             <Clock className="size-4 shrink-0 text-primary" aria-hidden="true" />
@@ -252,7 +221,6 @@ export default async function ApplicationDetailsPage({
           </div>
         )}
 
-        {/* Job — the core reference content for this application, always visible. */}
         <Card>
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle>Job</CardTitle>
@@ -283,10 +251,6 @@ export default async function ApplicationDetailsPage({
           </CardContent>
         </Card>
 
-        {/* Workspace — Documents, Learning Path, and Interviews & Follow-ups
-            grouped under one tabbed area instead of three separate stacked
-            cards, so the page reads as a workspace for this application
-            rather than a pile of unrelated cards. */}
         <Card>
           <CardContent className="pt-5">
             <Tabs defaultValue={defaultWorkspaceTab}>

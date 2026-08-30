@@ -1,8 +1,6 @@
 import { GoogleGenAI, type Schema } from "@google/genai";
 
-// Flash tier — fast and cost-effective. Used for Job Analysis, Resume
-// Analysis, and Resume Tailoring's structured output. (The AI Assistant
-// uses Groq instead — see src/lib/groq.ts.)
+// Used for Job Analysis, Resume Analysis, and Resume Tailoring. AI Assistant chat uses Groq (see groq.ts).
 const MODEL = "gemini-3.6-flash";
 const TEMPERATURE = 0.6;
 
@@ -13,10 +11,7 @@ export class GeminiConfigError extends Error {
 }
 
 export class GeminiRequestError extends Error {
-  // Gemini only powers Job Analysis, Resume Analysis, and Resume Tailoring
-  // (the AI Assistant chat uses Groq — see src/lib/groq.ts) — this default
-  // message previously said "AI assistant", which read as a report of the
-  // wrong feature being down and caused real confusion.
+  // Says "AI analysis" (Job Analysis / Resume Analysis / Tailoring) — the AI Assistant chat uses Groq, not Gemini.
   constructor(message = "The AI analysis is temporarily unavailable. Please try again.") {
     super(message);
   }
@@ -35,24 +30,12 @@ function getClient(): GoogleGenAI {
 
 const STRUCTURED_MAX_OUTPUT_TOKENS = 4000;
 
-// gemini-3.6-flash is a "thinking" model: without an explicit cap, it can
-// spend most (or all) of maxOutputTokens on invisible internal reasoning
-// before ever emitting the actual JSON, truncating the response mid-string
-// (finishReason "MAX_TOKENS", unparsable JSON). Root-caused via live
-// reproduction on 2026-08-23: a richer prompt (Master Resume + longer JD)
-// pushed thoughtsTokenCount to ~1900 of a 2000 budget, leaving ~70 tokens
-// for output. Capping the thinking budget fixed it in every reproduction
-// (and was faster: ~8s vs ~12-16s) — do not remove this without re-testing
-// against a real Gemini request first.
+// gemini-3.6-flash is a "thinking" model: without a cap, it can spend the whole
+// output budget on invisible reasoning and truncate the JSON mid-string
+// (finishReason "MAX_TOKENS"). Don't remove this without re-testing.
 const STRUCTURED_THINKING_BUDGET = 512;
 
-/**
- * Asks Gemini to return JSON matching `responseSchema` and returns the raw
- * JSON text (unparsed — callers own parsing/validation of their own
- * response shape). Never throws the underlying Gemini/network error to the
- * caller — only GeminiConfigError or GeminiRequestError, both safe to
- * surface to users.
- */
+/** Returns raw JSON text matching `responseSchema` (callers parse/validate it). Only throws GeminiConfigError/GeminiRequestError — safe to surface to users. */
 export async function generateStructuredReply(
   systemInstruction: string,
   userPrompt: string,
@@ -88,10 +71,7 @@ export async function generateStructuredReply(
   } catch (error) {
     if (error instanceof GeminiConfigError || error instanceof GeminiRequestError) throw error;
     console.error("[gemini] structured request failed:", error);
-    // Gemini's free-tier daily quota (20 requests/day for gemini-3.6-flash)
-    // surfaces as a 429 — worth telling the user apart from a generic
-    // failure, since "try again" a moment later won't help but waiting
-    // will.
+    // Free-tier daily quota exhaustion surfaces as a 429 — tell it apart from a generic failure since retrying won't help.
     const status = (error as { status?: number })?.status;
     if (status === 429) {
       throw new GeminiRequestError(

@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { REMINDER_OPTIONS } from "@/lib/google-calendar/mapping";
 
-/** Multi-select reminder editor — presets only (see mapping.ts's REMINDER_OPTIONS), no duplicates, shown sorted chronologically (largest lead time first). Shared by the Calendar workspace's create/edit form and the Application detail page's Interview/Follow-up quick-add forms. */
+/** Multi-select reminder editor, shared by the Calendar workspace's form and the Application detail page's quick-add forms. */
 export function ReminderPicker({ value, onChange }: { value: number[]; onChange: (next: number[]) => void }) {
   const sorted = [...value].sort((a, b) => b - a);
   const available = REMINDER_OPTIONS.filter((option) => !value.includes(option.minutes));
@@ -59,7 +59,7 @@ export function ReminderPicker({ value, onChange }: { value: number[]; onChange:
           ))}
         </Select>
       )}
-      {sorted.length === 0 && available.length === REMINDER_OPTIONS.length && (
+      {sorted.length === 0 && (
         <p className="text-xs text-muted-foreground">No reminders selected — Google Calendar won&apos;t notify you for this event.</p>
       )}
     </div>

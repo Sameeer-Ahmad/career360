@@ -38,16 +38,7 @@ export async function getProgress(userId: string, topicId: string): Promise<Lear
   return progress ?? DEFAULT_PROGRESS;
 }
 
-/**
- * Ownership-checked upsert. Transitions are unrestricted — any status can
- * be set directly from any other, matching this codebase's existing
- * ApplicationStatus convention (no transition-guarding logic anywhere).
- * completedAt is set to now() only when entering COMPLETED, and cleared
- * whenever leaving COMPLETED. Setting NOT_STARTED deletes the row
- * entirely, returning to the implicit default rather than persisting a
- * redundant explicit-default row (mirrors LearningResource/LearningNote's
- * "absence is a valid state" convention).
- */
+/** Ownership-checked upsert. Transitions are unrestricted (matches ApplicationStatus's convention). completedAt is set on entering COMPLETED and cleared on leaving it. Setting NOT_STARTED deletes the row rather than persisting a redundant default. */
 export async function setProgress(userId: string, topicId: string, status: ProgressStatus): Promise<LearningProgressData> {
   if (!PROGRESS_STATUSES.includes(status)) {
     throw new ValidationError();
@@ -64,8 +55,7 @@ export async function setProgress(userId: string, topicId: string, status: Progr
     select: { status: true, completedAt: true },
   });
 
-  // completedAt only changes on an actual transition into/out of COMPLETED
-  // — re-setting the same status (a redundant click) is a no-op for it.
+  // completedAt only changes on an actual transition into/out of COMPLETED — a redundant re-click is a no-op.
   let completedAt: Date | null;
   if (current?.status === status) {
     completedAt = current.completedAt;

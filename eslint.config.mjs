@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated Prisma client for the MongoDB migration-infrastructure
+    // scratch tooling (mongo-migration/) — vendor-generated code, not
+    // hand-written, not part of the shipped app.
+    "mongo-migration/generated/**",
   ]),
 ]);
 

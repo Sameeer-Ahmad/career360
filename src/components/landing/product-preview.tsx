@@ -3,13 +3,8 @@ import { Briefcase, CalendarClock, CalendarDays, FileText, GraduationCap, Send, 
 import { Badge, PriorityBadge, StatusBadge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 
-/**
- * Static illustrative mockups for the marketing page — built from the
- * real Career360 UI primitives (Badge/StatusBadge/PriorityBadge, the same
- * status color tokens the authenticated app uses) so this looks like an
- * actual product screenshot rather than an unrelated decorative graphic.
- * All example content here is clearly illustrative, not real user data.
- */
+// Illustrative mockups built from the real Career360 UI primitives (Badge,
+// StatusBadge, etc.) so they read as product screenshots, not decoration.
 
 function BrowserFrame({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -83,10 +78,7 @@ export function HeroPreview() {
   );
 }
 
-// Anchored just outside all four corners (negative top/bottom keeps them
-// clear of the card's own content — the stat row and "What's next" list
-// sit close enough to the edges that anything less than a full corner
-// offset clips real text underneath).
+// Anchored just outside all four corners so they don't clip the card's own content.
 const FLOATING_BADGES: { icon: ComponentType<{ className?: string }>; label: string; position: string; floatDelay: string }[] = [
   { icon: Briefcase, label: "Application added", position: "-left-6 -top-4 sm:-left-10 sm:-top-5", floatDelay: "0s" },
   { icon: CalendarDays, label: "Interview scheduled", position: "-right-4 -top-4 sm:-right-10 sm:-top-5", floatDelay: "1.1s" },
@@ -94,7 +86,7 @@ const FLOATING_BADGES: { icon: ComponentType<{ className?: string }>; label: str
   { icon: GraduationCap, label: "Learning path created", position: "-right-4 -bottom-4 sm:-right-10 sm:-bottom-5", floatDelay: "0.6s" },
 ];
 
-/** The hero's headline visual — the Dashboard glimpse plus small floating cards naming real product actions, communicating the workflow at a glance. Floating badges are hidden below sm: not enough room, and it'd risk horizontal overflow on narrow screens. */
+/** Floating badges are hidden below sm: not enough room, risks horizontal overflow. */
 export function HeroVisual() {
   return (
     <div className="relative">

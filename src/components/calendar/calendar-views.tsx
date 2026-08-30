@@ -6,7 +6,7 @@ import { buildMonthGridDays, isSameDay, isToday } from "@/lib/google-calendar/ca
 import { eventTime, type CalendarEventItem } from "@/components/calendar/calendar-event-types";
 import { CALENDAR_EVENT_TYPE_BADGE_VARIANT as EVENT_TYPE_BADGE_VARIANT, CALENDAR_EVENT_TYPE_LABELS, type CalendarEventType } from "@/lib/google-calendar/mapping";
 
-/** Same palette as the Badge variants above, expressed as chip classes for the compact month-grid cells (which render plain buttons, not Badge components). */
+/** Same palette as the Badge variants, as chip classes for the month-grid cells (plain buttons, not Badge components). */
 const EVENT_TYPE_CHIP_CLASSES: Record<CalendarEventType, string> = {
   INTERVIEW: "bg-status-applied-bg text-status-applied-fg",
   FOLLOW_UP: "bg-status-interview-bg text-status-interview-fg",
@@ -20,11 +20,8 @@ function eventsForDay(events: CalendarEventItem[], day: Date): CalendarEventItem
 
 const MAX_CHIPS_PER_DAY = 3;
 
-// ---------------------------------------------------------------------------
 // Month grid (desktop/tablet) — collapses to an agenda list on mobile via
 // responsive visibility, not a separate JS branch.
-// ---------------------------------------------------------------------------
-
 export function MonthGrid({
   referenceDate,
   events,
@@ -95,12 +92,7 @@ export function MonthGrid({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Agenda list — used for Week view always, and as Month view's mobile
-// fallback (a day-by-day list reads far better than a cramped grid on a
-// small screen).
-// ---------------------------------------------------------------------------
-
+// Agenda list — used for Week view always, and as Month view's mobile fallback.
 export function AgendaList({
   days,
   events,

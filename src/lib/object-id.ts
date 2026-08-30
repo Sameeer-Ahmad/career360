@@ -1,6 +1,4 @@
-// A MongoDB ObjectId is always exactly 24 hex characters. Replaces the old
-// `Number.isInteger(id) && id > 0` pattern everywhere a route param, query
-// param, or request-body field is expected to be a database id.
+// A MongoDB ObjectId is always exactly 24 hex characters.
 const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 
 export function isValidObjectId(value: unknown): value is string {

@@ -1,6 +1,5 @@
-// Local type mirrors, not imported from @/lib/learning or
-// @/lib/learning-resources — those modules import the Prisma client
-// (server-only) and must never reach a "use client" bundle.
+// Local type mirrors, not imported from @/lib/learning — that module imports
+// the Prisma client (server-only) and must never reach a "use client" bundle.
 
 export type LearningApplicationContext = {
   id: string;

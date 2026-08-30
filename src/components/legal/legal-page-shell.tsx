@@ -33,13 +33,8 @@ export function LegalPageShell({
       </section>
 
       <section className="border-t border-border/60 py-16 sm:py-20">
-        {/* No Reveal here (unlike the hero above) — wrapping the whole,
-            much-taller-than-one-viewport body in a single scroll-triggered
-            fade meant the IntersectionObserver's 15% visibility threshold
-            wasn't met until the user had already scrolled a good way down,
-            so the entire document looked blank on first load. Legal-document
-            text should just be there immediately, not gated behind a
-            scroll animation. */}
+        {/* No Reveal here — the body is taller than one viewport, so a single
+            scroll-triggered fade would leave it blank until scrolled into view. */}
         <div className="mx-auto max-w-3xl space-y-10 px-4 md:px-6">{children}</div>
       </section>
 

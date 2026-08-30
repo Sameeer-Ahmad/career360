@@ -1,8 +1,5 @@
 // Pure date/grid/link helpers shared across the Calendar UI — Monday-start
-// weeks throughout. Kept dependency-free so both the CalendarWorkspace
-// component and the Application detail page's quick-add success states use
-// the exact same date logic, and so a formatting/navigation bug only ever
-// needs fixing in one place.
+// weeks throughout.
 
 export function startOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -45,14 +42,9 @@ export function monthLabel(date: Date): string {
 
 /**
  * "Aug 24 – 30, 2026" within a month; "Aug 31 – Sep 6, 2026" across months;
- * "Dec 29, 2025 – Jan 4, 2026" across years.
- *
- * Built from individually-safe single-field `toLocaleDateString` calls.
- * `toLocaleDateString("en-US", { day: "numeric", year: "numeric" })` (day +
- * year with no month) is not a combination Intl guarantees a sane result
- * for — in this runtime's ICU data it renders as e.g. "2026 (day: 30)"
- * instead of "30, 2026", which was the original bug here. Always compose
- * the parts manually instead of relying on that combination.
+ * "Dec 29, 2025 – Jan 4, 2026" across years. Built from single-field
+ * `toLocaleDateString` calls composed manually — a combined day+year call
+ * with no month isn't a format Intl guarantees a sane result for.
  */
 export function weekRangeLabel(days: Date[]): string {
   const start = days[0];
@@ -105,27 +97,14 @@ export function parseLocalDateTime(date: string, time: string): Date {
   return new Date(`${date}T${time}`);
 }
 
-/**
- * True when the given date/time is strictly after the current moment — no
- * arbitrary minimum lead time (an event 3 minutes from now is valid).
- * Used to block creating calendar events in the past, on both the client
- * (for immediate inline feedback) and the server (createCalendarEvent's
- * own validateCreateInput — the authoritative check a client bypass can't
- * skip).
- */
+/** True when the date/time is strictly after now — used to block creating events in the past, both client-side and (authoritatively) in createCalendarEvent's validateCreateInput. */
 export function isFutureDateTime(date: Date): boolean {
   return date.getTime() > Date.now();
 }
 
 export const PAST_DATETIME_MESSAGE = "This time has already passed. Please choose a future date and time.";
 
-/**
- * The internal Career360 destination for "Open in Calendar" — always
- * `/calendar`, optionally focused on one event. Never the Google Calendar
- * URL: that's a distinct, explicitly-labeled "Open in Google Calendar"
- * secondary action that uses the event's own `htmlLink` directly, not this
- * helper.
- */
+/** The internal Career360 destination for "Open in Calendar" — always `/calendar`, optionally focused on one event. Not the Google Calendar URL (see htmlLink for that). */
 export function calendarEventHref(eventId?: string): string {
   return eventId ? `/calendar?event=${encodeURIComponent(eventId)}` : "/calendar";
 }

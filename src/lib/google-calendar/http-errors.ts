@@ -1,6 +1,5 @@
-// Shared error->HTTP mapping for every /api/calendar/* route — keeps the
-// mapping consistent and in one place rather than duplicated per route.
-// Never surfaces a raw Google API error to the client.
+// Shared error->HTTP mapping for every /api/calendar/* route — never
+// surfaces a raw Google API error to the client.
 import { NextResponse } from "next/server";
 import {
   GoogleCalendarEventNotFoundError,

@@ -25,13 +25,9 @@ function todayInputValue(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/**
- * Explicit, user-driven scheduling only — never called automatically for
- * every topic or path (see the Learning Safety requirement this
- * implements: no calendar spam). Creates one Google Calendar recurring
- * event (a weekly RRULE, built server-side from the selected days) —
- * Google Calendar owns the resulting occurrences and their reminders.
- */
+// Explicit, user-driven scheduling only — never triggered automatically, to
+// avoid calendar spam. Creates one recurring event (weekly RRULE) and lets
+// Google Calendar own the resulting occurrences and reminders.
 export function ScheduleLearningButton({
   learningPathId,
   pathTitle,

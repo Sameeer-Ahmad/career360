@@ -29,21 +29,10 @@ export const metadata: Metadata = {
   description: "Career360 — your complete career workspace.",
 };
 
-/**
- * React 19 logs a spurious dev-only warning ("Encountered a script tag
- * while rendering...") for any inline <script> a component renders,
- * including this file's own theme-init script below — even though the
- * browser already executes it correctly via native HTML parsing, well
- * before React loads. No structural fix exists upstream yet (see
- * https://github.com/shadcn-ui/ui/issues/10104), so this patches
- * console.error to drop just that one message, nothing else.
- *
- * This has to be a synchronous inline script (not a React client
- * component's module code) — it must install itself before React's
- * hydration pass reaches the theme-init script, and a client component's
- * own module may not finish loading/executing in time relative to that
- * (confirmed: patching it from ThemeProvider was too late).
- */
+// React 19 logs a spurious dev warning for any inline <script>, including the
+// theme-init script below (github.com/shadcn-ui/ui/issues/10104). This patches
+// console.error to drop just that message; must be a sync inline script so it
+// installs before React's hydration pass reaches the theme-init script.
 const CONSOLE_ERROR_FILTER_SCRIPT = `(function(){try{var e=console.error;console.error=function(){var a=arguments[0];if(typeof a==="string"&&a.indexOf("Encountered a script tag while rendering")!==-1)return;return e.apply(console,arguments);};}catch(_){}})();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -54,9 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        {/* Blocking, pre-hydration script — avoids a flash of the wrong theme.
-            The console-error filter above runs first, synchronously, so it's
-            in place before React can warn about this same script tag. */}
+        {/* Blocking, pre-hydration script — avoids a flash of the wrong theme. */}
         <script dangerouslySetInnerHTML={{ __html: CONSOLE_ERROR_FILTER_SCRIPT + themeInitScript() }} />
       </head>
       <body suppressHydrationWarning>

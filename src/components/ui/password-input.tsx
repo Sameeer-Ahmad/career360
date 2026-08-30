@@ -6,7 +6,6 @@ import { cn } from "@/lib/cn";
 
 export type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type">;
 
-/** Password field with a show/hide toggle — same visual treatment as Input, plus an eye button. */
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(({ className, ...props }, ref) => {
   const [visible, setVisible] = useState(false);
 

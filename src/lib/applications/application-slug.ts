@@ -1,12 +1,6 @@
-// Deterministic, no-schema-change human-readable slugs for the Application
-// detail URL — /applications/<company>-<job-title>-<shortId>. The
-// authoritative identifier remains the full MongoDB ObjectId; shortId is
-// just its last 6 hex characters, used only to resolve a slug back to a
-// real id (scoped to the requesting user's own applications — see
-// resolveApplicationId in applications.ts). The company/job-title portion
-// of the slug is cosmetic only and is never used for lookup, so a stale
-// slug (company/title renamed since the URL was generated or shared)
-// still resolves correctly rather than 404ing.
+// Human-readable slug for /applications/<slug> — the real id is the ObjectId;
+// only the trailing shortId is used to resolve it, so a stale company/title
+// (renamed since the slug was generated) still resolves correctly.
 
 const SHORT_ID_LENGTH = 6;
 

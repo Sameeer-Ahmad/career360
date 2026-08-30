@@ -12,13 +12,7 @@ import {
 import { generateStructuredJsonReply, GroqConfigError, GroqRequestError } from "@/lib/groq";
 import { isValidObjectId } from "@/lib/object-id";
 
-/**
- * Generates a learning-plan PREVIEW only — nothing is persisted here. The
- * client reviews it and, if it wants to keep it, POSTs it back to
- * /api/learning to actually save it. Every input (resume content, JD,
- * application ownership) is gathered server-side; nothing sensitive is
- * ever trusted from the request body.
- */
+/** Generates a learning-plan preview only — nothing is persisted. The client reviews it and POSTs it back to /api/learning to save. */
 export async function POST(request: NextRequest) {
   const userId = await requireUserId();
   if (userId instanceof NextResponse) return userId;

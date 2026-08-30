@@ -10,12 +10,7 @@ import { cn } from "@/lib/cn";
 import { AddResourceForm, ResourceRow } from "@/components/learning/resource-row";
 import type { ResourceHandlers, ResourcesByTopic, SavedPathDetail } from "@/components/learning/learning-types";
 
-// ---------------------------------------------------------------------------
-// Resources view — aggregated across every topic, grouped by topic, with
-// type and topic filters. Curated resources stay read-only; USER_ADDED
-// resources keep Edit/Delete.
-// ---------------------------------------------------------------------------
-
+// Only USER_ADDED resources get Edit/Delete — curated ones stay read-only.
 type ResourceFilter = "ALL" | "YOUTUBE" | "OFFICIAL_DOCS" | "USER_LINK";
 const RESOURCE_FILTERS: { value: ResourceFilter; label: string }[] = [
   { value: "ALL", label: "All" },

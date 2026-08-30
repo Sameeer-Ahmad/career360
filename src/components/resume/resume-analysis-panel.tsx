@@ -32,6 +32,13 @@ import type {
   ResumeOption,
 } from "@/components/resume/resume-analysis-types";
 
+function resumeLabelSuffix(resume: ResumeOption) {
+  if (resume.isTailored) return " (tailored)";
+  if (resume.resumeRole === "MAIN") return " (Main)";
+  if (resume.resumeRole === "MASTER") return " (Master)";
+  return "";
+}
+
 const READINESS_LOADING = ["Analyzing resume structure…"];
 const MATCH_LOADING = [
   "Reading your resume…",
@@ -145,13 +152,7 @@ export function ResumeAnalysisPanel({
           {localResumes.map((resume) => (
             <option key={resume.id} value={resume.id}>
               {resume.title}
-              {resume.isTailored
-                ? " (tailored)"
-                : resume.resumeRole === "MAIN"
-                  ? " (Main)"
-                  : resume.resumeRole === "MASTER"
-                    ? " (Master)"
-                    : ""}
+              {resumeLabelSuffix(resume)}
             </option>
           ))}
         </Select>

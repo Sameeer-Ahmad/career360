@@ -11,9 +11,7 @@ declare module "next-auth" {
   }
 
   interface Session {
-    // `id` is a MongoDB ObjectId string end to end — Prisma's User.id column
-    // is natively String @db.ObjectId, so this needs no conversion anywhere
-    // it's used to query the database (unlike the old MySQL Int id).
+    // Matches Prisma's User.id, which is natively String @db.ObjectId.
     user: {
       id: string;
       avatarUrl?: string | null;
@@ -23,12 +21,8 @@ declare module "next-auth" {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  // Auth.js's Credentials provider only supports JWT sessions (it has no
-  // server-side verification step for the adapter's database-session
-  // strategy to hook into) — required as soon as Credentials exists
-  // alongside Google, not optional. The adapter is still used for
-  // Google's own user/account persistence; only where the *session itself*
-  // lives changes (signed cookie instead of the Session table).
+  // Credentials provider only supports JWT sessions, so this applies globally.
+  // The adapter still handles Google's own user/account persistence.
   session: { strategy: "jwt" },
   providers: [
     Google({
@@ -64,9 +58,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    // JWT strategy: the token is only populated from `user` on the initial
-    // sign-in call; every later call only has the token itself, so the
-    // fields the session needs must be copied onto it here once.
+    // `user` is only present on the initial sign-in call, so copy what the session needs onto the token here.
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;

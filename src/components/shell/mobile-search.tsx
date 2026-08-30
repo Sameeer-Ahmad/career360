@@ -6,12 +6,7 @@ import { Search, X } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import { HeaderSearch } from "@/components/shell/header-search";
 
-/**
- * The compact mobile treatment for global search — a small trigger icon
- * (the search bar itself has no room next to the title/hamburger below
- * md) that opens a full-screen overlay containing the exact same
- * HeaderSearch used on desktop. No second search implementation.
- */
+// Opens a full-screen overlay around the same HeaderSearch used on desktop — no second search implementation.
 export function MobileSearchTrigger() {
   const [open, setOpen] = useState(false);
 

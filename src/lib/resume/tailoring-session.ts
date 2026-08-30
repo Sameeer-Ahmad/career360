@@ -1,14 +1,5 @@
-/**
- * Pure, client-agnostic bookkeeping for a bounded, best-result-preserving
- * resume tailoring session: at most one comprehensive first pass plus 3
- * refinement rounds, with the best-scoring draft always preserved even if a
- * later round scores lower. No server-side session storage is involved —
- * the UI holds this state and resends the relevant parts (applied/rejected
- * suggestions, remaining gaps) as prompt context on each refinement request.
- * Kept separate from the resume-analysis-panel component so the actual
- * decision logic (round capping, best-score comparison, early completion) is
- * unit-testable without a component-test harness.
- */
+// Pure bookkeeping for a bounded resume tailoring session (one comprehensive pass + up to 3 refinement rounds)
+// that always preserves the best-scoring draft, even if a later round scores worse.
 import type { RequirementMatch, ResumeSuggestion, SuggestionType } from "@/lib/resume/resume-analysis";
 
 /** 1 comprehensive first pass + up to 3 refinement rounds. */
@@ -41,23 +32,13 @@ export function startNewSession(): TailoringSessionState {
   return INITIAL_TAILORING_SESSION;
 }
 
-/**
- * Whether another (non-fresh) analysis is allowed to run right now. False
- * once the round budget is spent, or an earlier round already finished the
- * session early (no meaningful improvements left) — starting a brand-new
- * session (isNewSession: true) is always allowed regardless.
- */
+/** False once the round budget is spent or an earlier round finished early; a fresh session is always allowed. */
 export function canStartNextAnalysis(session: TailoringSessionState, isNewSession: boolean): boolean {
   if (isNewSession) return true;
   return session.analysisCount < MAX_TAILORING_ANALYSES && !session.tailoringComplete;
 }
 
-/**
- * The call number (1-4) the next request represents, and the AI-facing
- * refinement round to tell Gemini about (0 = first-pass/no session context;
- * 1-3 = "refinement round N of 3", matching the round the request's applied/
- * rejected/remaining-gap context reflects).
- */
+/** callNumber is 1-4; aiRound is the Gemini-facing round (0 = first pass, 1-3 = refinement round N of 3). */
 export function nextTailoringCall(
   session: TailoringSessionState,
   isNewSession: boolean,
@@ -89,13 +70,7 @@ export function suggestionOutcomes(
   }));
 }
 
-/**
- * Folds a just-finished round's suggestion outcomes into the session's
- * cross-round history — this is what lets the next round's request tell
- * Gemini "already applied: ..." / "already rejected: ...", so an accepted
- * Master Resume suggestion (or any other accepted suggestion) can never be
- * re-proposed in a later round of the same session.
- */
+/** Folds a finished round's outcomes into history so a later round's request can tell Gemini what's already applied/rejected. */
 export function foldRoundIntoHistory(
   session: TailoringSessionState,
   outcomes: SuggestionOutcome[],
@@ -121,15 +96,8 @@ export function remainingGapsFrom(
     .map((r) => ({ requirement: r.requirement, status: r.status }));
 }
 
-/**
- * Applies one completed analysis to the session: advances the call counter,
- * and updates best-score/best-draft ONLY when this result matches or beats
- * the current best — never on a regression. This is the core "best result
- * always wins" guarantee: a worse-scoring later round can never overwrite a
- * better earlier one. Also marks the session complete once the round budget
- * is spent, or a round comes back with no further suggestions at all (early
- * completion — the user is never forced through all 3 rounds).
- */
+// Updates best-score/best-draft only on a tie-or-better result, so a worse-scoring round never overwrites the best one.
+// Marks the session complete at the round budget or once a round returns no further suggestions.
 export function applyAnalysisResult(
   session: TailoringSessionState,
   result: { callNumber: number; score: number; content: string; suggestionCount: number },

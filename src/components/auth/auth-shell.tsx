@@ -25,15 +25,8 @@ export function AuthShell({
         <div className="absolute left-1/2 top-0 size-[560px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-primary/10 blur-3xl" />
       </div>
 
-      {/* Utility row — back link top-left, theme toggle top-right. Always
-          reserves both sides (even when the back link is hidden) so the
-          toggle stays put rather than jumping around between pages.
-          z-20 (higher than the content block below) so the theme dropdown,
-          which opens downward from a trigger right at the top edge, stays
-          clickable instead of being hit-tested behind the content block's
-          empty space — equal z-index siblings stack by DOM order, and a
-          descendant's z-index can't escape its own stacking context to
-          beat a sibling that already won that tie-break. */}
+      {/* z-20 keeps the theme dropdown above the content block below it
+          (z-10), so it stays clickable when it opens downward. */}
       <div className="relative z-20 flex items-center justify-between px-4 py-4 sm:px-6">
         {showBackLink ? (
           <Link

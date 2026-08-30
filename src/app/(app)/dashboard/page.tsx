@@ -29,9 +29,7 @@ import { Divider } from "@/components/ui/divider";
 import { formatDate } from "@/lib/format";
 import { ApplicationsTrendChart } from "@/components/dashboard/applications-trend-chart";
 
-// Traceable to the assistant's own real suggested prompts
-// (src/components/ai-assistant/career-assistant.tsx) — never claims a
-// capability that isn't actually implemented.
+// Mirrors the assistant's real suggested prompts — never claims a capability it doesn't have.
 const AI_ASSISTANT_CAPABILITIES = [
   "Application-specific prep guidance",
   "Interview readiness tips",
@@ -149,9 +147,7 @@ export default async function DashboardPage() {
           </Card>
 
           <Card className="relative flex flex-col overflow-hidden border-primary/30 bg-primary/5">
-            {/* Purely decorative corner glow — absolutely positioned and
-                clipped by the card's own overflow-hidden, so it can never
-                sit above or crowd the text/CTA regardless of card width. */}
+            {/* Decorative corner glow, clipped by the card's overflow-hidden. */}
             <div
               className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/10 blur-3xl"
               aria-hidden="true"

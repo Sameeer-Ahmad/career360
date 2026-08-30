@@ -25,9 +25,7 @@ export default async function LearningPage({
   let applicationContext: LearningApplicationContext | undefined;
   if (applicationId !== null) {
     try {
-      // Re-verifies ownership here too (in addition to the API route) so we
-      // only ever show application context for applications this user
-      // actually owns.
+      // Re-verifies ownership here too so we only show context for applications this user owns.
       const application = await getApplication(session.user.id, applicationId);
       applicationContext = {
         id: application.id,

@@ -42,9 +42,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const content = typeof (body as Record<string, unknown>)?.content === "string"
-    ? (body as Record<string, unknown>).content as string
-    : null;
+  const raw = body as Record<string, unknown> | null;
+  const content = typeof raw?.content === "string" ? raw.content : null;
   if (content === null) {
     return NextResponse.json({ error: "content must be a string" }, { status: 400 });
   }

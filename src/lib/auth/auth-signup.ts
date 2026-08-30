@@ -1,8 +1,5 @@
-// Creates a Career360 account authenticated by email+password — entirely
-// separate from Google sign-in (src/auth.ts's Google provider) and from
-// Google Calendar's own OAuth connection (src/lib/google-calendar). This
-// is the one thing NextAuth's Credentials provider deliberately doesn't
-// do itself: it verifies credentials, it never registers new ones.
+// NextAuth's Credentials provider only verifies existing accounts — this
+// handles registration for email+password accounts, separate from Google sign-in.
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
 
