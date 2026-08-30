@@ -1,4 +1,4 @@
-import type { ApplicationStatus, EmploymentType, Priority } from "@prisma/client";
+import type { ApplicationStatus, EmploymentType, Priority, ResumeRole } from "@prisma/client";
 
 export type BadgeVariant = "neutral" | "primary" | "success" | "warning" | "destructive" | "info";
 
@@ -24,6 +24,11 @@ export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   CONTRACT: "Contract",
   INTERNSHIP: "Internship",
   FREELANCE: "Freelance",
+};
+
+export const RESUME_ROLE_LABELS: Record<ResumeRole, string> = {
+  MAIN: "Main Resume",
+  MASTER: "Master Resume",
 };
 
 export function formatDate(value: Date | string | null | undefined): string {

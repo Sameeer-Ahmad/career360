@@ -28,6 +28,7 @@ model User {
   accounts     Account[]
   sessions     Session[]
   applications Application[]
+  documents    Document[]
 }
 
 model Account {
@@ -92,11 +93,72 @@ model Application {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company       Company    @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  taggedResumes Document[] @relation("DocumentApplication")
 
   @@index([userId, status])
   @@index([companyId])
+}
+
+model Document {
+  id               String                @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String                @db.ObjectId
+  type             DocumentType          @default(RESUME)
+  contentFormat    DocumentContentFormat @default(PLAIN)
+  // Only meaningful for standalone (sourceDocumentId = null) RESUME documents —
+  // distinguishes the user's normal/default resume from their optional
+  // complete career-content library. Null for tailored versions and for
+  // non-RESUME document types.
+  resumeRole       ResumeRole?
+  title            String
+  content          String
+  sourceDocumentId String?               @db.ObjectId
+  // The Master Resume (if any) consulted when this tailored version was
+  // created — a secondary reference distinct from sourceDocumentId (the
+  // resume actually being tailored, usually the Main Resume).
+  masterDocumentId String?               @db.ObjectId
+  applicationId    String?               @db.ObjectId
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Prisma's MongoDB connector REQUIRES both onDelete and onUpdate to be
+  // NoAction on a self-relation (confirmed empirically against 6.19.3 —
+  // any other onDelete value is a schema-validation-time error). This
+  // means the Cascade (deleting a source deletes its tailored versions)
+  // and SetNull (deleting a Master nulls masterDocumentId on tailored
+  // versions) behavior the old MySQL schema declared cannot be
+  // Prisma-emulated here — it is implemented explicitly in
+  // src/lib/documents.ts's deleteDocument(), which finds and handles
+  // both cascades itself before deleting the target document.
+  sourceDocument        Document?    @relation("DocumentVersions", fields: [sourceDocumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  versions              Document[]   @relation("DocumentVersions")
+  masterDocument        Document?    @relation("DocumentMasterReference", fields: [masterDocumentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tailoredUsingAsMaster Document[]   @relation("DocumentMasterReference")
+  application           Application? @relation("DocumentApplication", fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([sourceDocumentId])
+  @@index([masterDocumentId])
+  @@index([applicationId])
+}
+
+enum DocumentType {
+  RESUME
+  COVER_LETTER
+  OTHER
+}
+
+enum DocumentContentFormat {
+  PLAIN
+  LATEX
+}
+
+enum ResumeRole {
+  MAIN
+  MASTER
 }
 
 enum ApplicationStatus {
